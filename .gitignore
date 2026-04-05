@@ -13,3 +13,4 @@ data/servermagicnumbers.json
 production
 
 .vscode
+*.code-workspace
