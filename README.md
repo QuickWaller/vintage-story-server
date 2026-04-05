@@ -35,6 +35,7 @@ Create a directory for where you want to store the `compose.yaml` and server dat
 services:
   vintage-story:
     image: quartzar/vintage-story-server:latest
+    pull_policy: always
     container_name: vs-server
     restart: unless-stopped
     ports:
@@ -43,7 +44,7 @@ services:
       - ./data:/srv/gameserver/data/vs
     environment:
       - TZ=Europe/London  # Set to your timezone (optional)
-      - VERSION=1.20.0-rc.1   # Game version - works with release candidates (unstable) as well as regular releases (stable)
+      - VERSION=1.22.0-rc.7   # Game version - works with release candidates (unstable) as well as regular releases (stable)
     stdin_open: true
     tty: true
 ```
