@@ -1,9 +1,11 @@
 services:
   vintage-story:
     image: vintage-story:local
+    pull_policy: build
     build:
       context: .
       dockerfile: Dockerfile
+      pull: true
     container_name: vs-server
     restart: unless-stopped
     ports:
