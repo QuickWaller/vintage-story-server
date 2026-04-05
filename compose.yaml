@@ -1,7 +1,7 @@
 services:
   vintage-story:
     image: vintage-story:local
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     container_name: vs-server
@@ -12,6 +12,6 @@ services:
       - ./data:/srv/gameserver/data/vs
     environment:
       - TZ=Europe/London  # Set to your timezone
-      - VERSION=1.21.0  # Game version - works with release candidates (unstable) as well as regular releases (stable)
+      - VERSION=1.21.6  # Game version - works with release candidates (unstable) as well as regular releases (stable)
     stdin_open: true
     tty: true
