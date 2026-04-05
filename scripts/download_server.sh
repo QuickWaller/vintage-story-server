@@ -21,7 +21,7 @@ else
 fi
 
 wget -q "$DOWNLOAD_URL"
-tar xzf vs_server_linux-x64_${VERSION}.tar.gz
-rm vs_server_linux-x64_${VERSION}.tar.gz
+tar xzf "vs_server_linux-x64_${VERSION}.tar.gz"
+rm "vs_server_linux-x64_${VERSION}.tar.gz"
 
 echo "$VERSION" > current_version
