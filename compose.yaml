@@ -13,7 +13,7 @@ services:
     volumes:
       - ./data:/srv/gameserver/data/vs
     environment:
-      - TZ=Europe/London  # Set to your timezone
-      - VERSION=1.21.6  # Game version - works with release candidates (unstable) as well as regular releases (stable)
+      - TZ=Pacific/Auckland  # Set to your timezone
+      - VERSION=1.22.0  # Game version - works with release candidates (unstable) as well as regular releases (stable)
     stdin_open: true
     tty: true
