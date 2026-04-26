@@ -17,3 +17,9 @@ services:
       - VERSION=1.22.0  # Game version - works with release candidates (unstable) as well as regular releases (stable)
     stdin_open: true
     tty: true
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/42420' 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
