@@ -31,4 +31,25 @@ else
     fi
 fi
 
+# Download mods listed in MODS env var (comma-separated mod IDs from mods.vintagestory.at)
+if [ -n "$MODS" ]; then
+    mkdir -p /srv/gameserver/data/vs/Mods
+    for MOD_ID in $(echo "$MODS" | tr ',' ' '); do
+        MOD_ID=$(echo "$MOD_ID" | xargs)
+        MOD_JSON=$(wget -qO- "https://mods.vintagestory.at/api/mod/${MOD_ID}")
+        FILENAME=$(echo "$MOD_JSON" | jq -r '.mod.releases[0].filename')
+        MAINFILE=$(echo "$MOD_JSON" | jq -r '.mod.releases[0].mainfile')
+        if [ -z "$FILENAME" ] || [ "$FILENAME" = "null" ]; then
+            echo "WARNING: Could not find mod '${MOD_ID}' on mods.vintagestory.at — skipping"
+            continue
+        fi
+        if [ -f "/srv/gameserver/data/vs/Mods/${FILENAME}" ]; then
+            echo "Mod already present, skipping: ${FILENAME}"
+            continue
+        fi
+        echo "Downloading mod: ${FILENAME}"
+        wget -qO "/srv/gameserver/data/vs/Mods/${FILENAME}" "https://mods.vintagestory.at${MAINFILE}"
+    done
+fi
+
 exec dotnet VintagestoryServer.dll --dataPath /srv/gameserver/data/vs
