@@ -15,7 +15,7 @@ services:
     environment:
       - TZ=Pacific/Auckland  # Set to your timezone
       - VERSION=1.22.0  # Game version - works with release candidates (unstable) as well as regular releases (stable)
-      - MODS=  # Comma-separated mod IDs from mods.vintagestory.at e.g. primitivesurvival,someothermod
+      - MODS=betterruins,watersheds,egocaribautomapmarkers,bloodtrail,walkingstick,medievalarchitecture,farseer,falandsknecht,fagothic,fahussar,deathcorpses,favarangian,fadynasties,plushiemodpack,healingsprings,offlinefoodnospoil,forestregenmod,tungsten,undergroundmines,vanillapluspatch,easybuilding,crockmod,webcartographer
     stdin_open: true
     tty: true
     healthcheck:
