@@ -47,8 +47,22 @@ if [ -n "$MODS" ]; then
             echo "Mod already present, skipping: ${FILENAME}"
             continue
         fi
+        # Use full URL if provided, otherwise prefix with base domain
+        if echo "$MAINFILE" | grep -q "^http"; then
+            DOWNLOAD_URL="$MAINFILE"
+        else
+            DOWNLOAD_URL="https://mods.vintagestory.at${MAINFILE}"
+        fi
         echo "Downloading mod: ${FILENAME}"
-        wget -qO "/srv/gameserver/data/vs/Mods/${FILENAME}" "https://mods.vintagestory.at${MAINFILE}"
+        if wget -q "$DOWNLOAD_URL" -O "/srv/gameserver/data/vs/Mods/${FILENAME}"; then
+            if [ ! -s "/srv/gameserver/data/vs/Mods/${FILENAME}" ]; then
+                echo "WARNING: Downloaded file for '${MOD_ID}' is empty — removing"
+                rm -f "/srv/gameserver/data/vs/Mods/${FILENAME}"
+            fi
+        else
+            echo "WARNING: Failed to download mod '${MOD_ID}' — removing partial file"
+            rm -f "/srv/gameserver/data/vs/Mods/${FILENAME}"
+        fi
     done
 fi
 
