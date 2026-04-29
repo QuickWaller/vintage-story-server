@@ -66,27 +66,4 @@ if [ -n "$MODS" ]; then
     done
 fi
 
-# Apply serverconfig.json overrides from environment variables
-CONFIG_FILE="/srv/gameserver/data/vs/serverconfig.json"
-CONFIG_OVERRIDES='{}'
-if [ -n "$POLAR_EQUATOR_DISTANCE" ]; then
-    CONFIG_OVERRIDES=$(echo "$CONFIG_OVERRIDES" | jq --arg val "$POLAR_EQUATOR_DISTANCE" '.WorldConfig.polarEquatorDistance = $val')
-    echo "Set polarEquatorDistance to $POLAR_EQUATOR_DISTANCE"
-fi
-if [ -n "$MAP_SIZE_X" ]; then
-    CONFIG_OVERRIDES=$(echo "$CONFIG_OVERRIDES" | jq --arg val "$MAP_SIZE_X" '.WorldConfig.mapSizeX = $val')
-    echo "Set mapSizeX to $MAP_SIZE_X"
-fi
-if [ -n "$MAP_SIZE_Z" ]; then
-    CONFIG_OVERRIDES=$(echo "$CONFIG_OVERRIDES" | jq --arg val "$MAP_SIZE_Z" '.WorldConfig.mapSizeZ = $val')
-    echo "Set mapSizeZ to $MAP_SIZE_Z"
-fi
-if [ "$CONFIG_OVERRIDES" != '{}' ]; then
-    if [ -f "$CONFIG_FILE" ]; then
-        jq --argjson overrides "$CONFIG_OVERRIDES" '. * $overrides' "$CONFIG_FILE" > /tmp/serverconfig.tmp && mv /tmp/serverconfig.tmp "$CONFIG_FILE"
-    else
-        echo "$CONFIG_OVERRIDES" > "$CONFIG_FILE"
-    fi
-fi
-
 exec dotnet VintagestoryServer.dll --dataPath /srv/gameserver/data/vs
