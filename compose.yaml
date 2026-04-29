@@ -15,7 +15,7 @@ services:
     environment:
       - TZ=Pacific/Auckland  # Set to your timezone
       - VERSION=1.22.0  # Game version - works with release candidates (unstable) as well as regular releases (stable)
-      - MODS=betterruins,watersheds,egocaribautomapmarkers,bloodtrail,walkingstick,medievalarchitecture,farseer,falandsknecht,fagothic,fahussar,deathcorpses,favarangian,fadynasties,plushiemodpack,healingsprings,offlinefoodnospoil,forestregenmod,tungsten,undergroundmines,vanillapluspatch,easybuilding,attributerenderinglibrary,ggbcsrepair,lostandfound,buzzwords,aldiclasses,stepupadvanced,charlottesclothes,waypointtogetherreborn,xskillsgilded,vsimgui,xlibfork,xskillsfork,vsvillage,expandedmatter
+      - MODS=betterruins,watersheds,egocaribautomapmarkers,bloodtrail,walkingstick,medievalarchitecture,farseer,falandsknecht,fagothic,fahussar,deathcorpses,favarangian,fadynasties,plushiemodpack,healingsprings,offlinefoodnospoil,forestregenmod,tungsten,undergroundmines,vanillapluspatch,easybuilding,attributerenderinglibrary,ggbcsrepair,lostandfound,buzzwords,aldiclasses,stepupadvanced,charlottesclothes,waypointtogetherreborn,xskillsgilded,vsimgui,xlibfork,xskillsfork,vsvillage,em
     stdin_open: true
     tty: true
     healthcheck:
