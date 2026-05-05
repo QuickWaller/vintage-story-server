@@ -40,6 +40,6 @@ RUN chmod +x /srv/gameserver/vintagestory/*.sh
 
 USER gameserver
 
-EXPOSE 42420
+EXPOSE 1079
 
 ENTRYPOINT ["/srv/gameserver/vintagestory/check_and_start.sh"]
