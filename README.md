@@ -2,6 +2,8 @@
 
 > Docker-based Vintage Story dedicated server with automatic mod management, built-in logging, and Coolify deployment support.
 
+**Special thanks to [quartzar](https://github.com/quartzar) for the original [vintage-story-server](https://github.com/quartzar/vintage-story-server) project.** This fork builds on that excellent foundation with additional features for mod management and automated deployment.
+
 > [!NOTE]
 > This is an enhanced fork of [quartzar/vintage-story-server](https://github.com/quartzar/vintage-story-server) with added mod management, comprehensive logging, and deployment automation.
 
