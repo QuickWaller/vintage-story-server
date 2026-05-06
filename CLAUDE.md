@@ -25,45 +25,64 @@ You are here to:
 
 ## Claude's Access & Management
 
-### vintage-story-manage Skill
+### vintage-story-manage Skill ✅
 Manage the Vintage Story server via SSH and Coolify API
 - **Server status**: Check container status and health
 - **Logs**: View real-time server logs and troubleshoot issues
 - **Restart**: Restart the container (triggers mod re-download)
-- **SSH access**: Direct shell access as root via sitehost-1.willscookbook.nz
+- **SSH access**: Direct shell access via Tailscale (192.168.2.151)
 - **Mods**: List installed mods, identify version compatibility
 - **Backups**: Create timestamped backups of saves
 
-### vintage-story-repo Skill
+### vintage-story-repo Skill ✅
 Maintain this repository and trigger deployments
 - **Version updates**: Update `VERSION` in compose.yaml for game updates
 - **Mod management**: Add/remove mods by updating MODS list
 - **Deployment**: Commit changes and push to GitHub (Coolify auto-deploys)
+- **Coolify API**: Check deployment status, view applications
 - **Validation**: Check repository structure, git status, mod compatibility
 - **Git operations**: Review history, diff changes, merge upstream updates
 - **Upstream sync**: Pull updates from original quartzar/vintage-story-server repo
 - **Documentation**: Keep CLAUDE.md and skills documentation current
 
-### vintage-story-network Skill (playit.gg)
-Monitor and manage the client tunnel infrastructure
+### vintage-story-network Skill ✅
+Monitor and manage the client tunnel infrastructure (playit.gg)
 - **Tunnel status**: Check if playit tunnel is healthy and accepting connections
 - **Agent status**: Verify playit agent is online and connected
 - **Connection monitoring**: Monitor active client connections
-- **Tunnel operations**: Create/delete tunnels if needed (rare)
+- **Tunnel operations**: Create/delete tunnels if needed
 - **Diagnostics**: Troubleshoot connectivity issues for players
+- **API access**: Full playit.gg API access via secret key
 
-### Coolify API Access
+### API & Access Methods (All Configured ✅)
+
+**Coolify API**
 - **Base URL**: https://sitehost-ui.willscookbook.nz/api/v1
-- **Authentication**: Token via `SITEHOST_UI_API_KEY` 
-- **Capabilities**: Trigger deployments, check application status, view logs
+- **Authentication**: Bearer token via `SITEHOST_UI_API_KEY`
+- **Status**: ✅ Working (v4.0.0-beta.474)
+- **Capabilities**: Applications, servers, deployments, terminal access
 - **Limitations**: Cannot read secrets (by design)
+
+**SSH Access**
+- **Method**: Via Tailscale to 192.168.2.151
+- **User**: will (standard user)
+- **Key**: `~/.ssh/sitehost1`
+- **Status**: ✅ Working
+- **Capabilities**: Full shell access, container management, file access
+
+**Playit.gg API**
+- **Secret Key**: Stored in `.env` as `PLAYIT_SECRET_KEY`
+- **Agent Status**: Running (container: playit-ok1p0160sc31ifys5zp6pa1z)
+- **Status**: ✅ Ready for use
+- **Capabilities**: Tunnel management, client monitoring, agent status
 
 ### Network Setup
 - **Server**: 192.168.2.151 on internal VLAN (Proxmox host)
-- **Client tunnel**: playit.gg handles Vintage Story client connections to sitehost-1.willscookbook.nz
-- **Management**: SSH via root@sitehost-1.willscookbook.nz (Coolify tunnel)
-- **Coolify UI**: https://sitehost-ui.willscookbook.nz (cloudflared tunnel)
-- **VPN**: Tailscale available for inter-network access as backup
+- **Client tunnel**: playit.gg handles Vintage Story client connections
+- **Management SSH**: Via Tailscale to 192.168.2.151 (user: will)
+- **Coolify UI**: https://sitehost-ui.willscookbook.nz (cloudflared tunnel, HTTPS with wildcard certs)
+- **VPN**: Tailscale provides secure network access across VLANs
+- **Certificates**: Wildcard SSL for *.willscookbook.nz installed on both VMs
 
 ## Architecture & Access
 
@@ -270,6 +289,22 @@ Claude can:
 → Uses `vintage-story-repo`
 - Reads: `MODS` list from `compose.yaml`
 - Returns: All active mods with versions
+
+## Setup Status
+
+### Complete ✅
+- **Coolify API** - Authenticated and operational
+- **SSH Access** - Via Tailscale to 192.168.2.151 (will user)
+- **Playit.gg Integration** - Secret key configured and ready
+- **HTTPS/TLS** - Wildcard certificates installed on both VMs
+- **Three Management Skills** - All fully functional
+- **Git Repository** - QuickWaller/vintage-story-server fork deployed via Coolify
+
+### Infrastructure
+- Cloudflare tunnels: sitehost-ui.willscookbook.nz (Coolify), cloudflared agent (playit.gg)
+- Tailscale VPN: Connects across VLAN boundaries for secure access
+- Deployments: GitHub → Coolify (auto-rebuild on push)
+- Mods: Auto-downloaded from mods.vintagestory.at on container startup
 
 ## Working Relationship
 
