@@ -49,6 +49,13 @@ Maintain this repository and trigger deployments
 - **Capabilities**: Trigger deployments, check application status, view logs
 - **Limitations**: Cannot read secrets (by design)
 
+### Network Setup
+- **Server**: 192.168.2.151 on internal VLAN (Proxmox host)
+- **Client tunnel**: playit.gg handles Vintage Story client connections to sitehost-1.willscookbook.nz
+- **Management**: SSH via root@sitehost-1.willscookbook.nz (Coolify tunnel)
+- **Coolify UI**: https://sitehost-ui.willscookbook.nz (cloudflared tunnel)
+- **VPN**: Tailscale available for inter-network access as backup
+
 ## Architecture & Access
 
 ### Deployment Flow
