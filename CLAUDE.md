@@ -23,84 +23,112 @@ You are here to:
 - Provide feedback on approach when needed
 - Help debug when something goes wrong
 
-## Claude's Access & Skills
+## Claude's Access & Management
 
-I have full access to manage both the server and this repository through two primary skills:
+### vintage-story-manage Skill
+Manage the Vintage Story server via SSH and Coolify API
+- **Server status**: Check container status and health
+- **Logs**: View real-time server logs and troubleshoot issues
+- **Restart**: Restart the container (triggers mod re-download)
+- **SSH access**: Direct shell access as root via sitehost-1.willscookbook.nz
+- **Mods**: List installed mods, identify version compatibility
+- **Backups**: Create timestamped backups of saves
 
-### vintage-story-manage
-Manage the Vintage Story server at will@192.168.2.151
-- Check server status and view logs
-- Restart, stop, or start the server
-- Manage mods (add, remove, list)
-- Create backups of world saves
-- View server configuration
+### vintage-story-repo Skill
+Maintain this repository and trigger deployments
+- **Version updates**: Update `VERSION` in compose.yaml for game updates
+- **Mod management**: Add/remove mods by updating MODS list
+- **Deployment**: Commit changes and trigger Coolify rebuild/deploy via API
+- **Validation**: Check repository structure, git status, mod compatibility
+- **Git operations**: Review history, diff changes, merge upstream updates
+- **Documentation**: Keep CLAUDE.md and skills documentation current
 
-### vintage-story-repo
-Maintain this repository
-- Update game version
-- Manage mods configuration
-- Validate repository state
-- Show git history and current changes
-- Commit changes with proper attribution
+### Coolify API Access
+- **Base URL**: https://sitehost-ui.willscookbook.nz/api/v1
+- **Authentication**: Token via `SITEHOST_UI_API_KEY` 
+- **Capabilities**: Trigger deployments, check application status, view logs
+- **Limitations**: Cannot read secrets (by design)
 
-## Access & Infrastructure
+## Architecture & Access
 
-### Server Details
-- **Host**: will@192.168.2.151 (via SSH)
-- **SSH Key**: `~/.ssh/sitehost1`
-- **Coolify API**: https://sitehost-ui.willscookbook.nz
-- **API Key**: Stored in `.env` as `SITEHOST_UI_API_KEY`
-- **Game Version**: 1.22.0 (configured in `compose.yaml`)
-- **Port**: 42420
+### Deployment Flow
+1. **GitHub Repository**: Fork at https://github.com/QuickWaller/vintage-story-server
+   - Upstream: https://github.com/quartzar/vintage-story-server (original)
+   - Deployed via GitHub App integration
+   
+2. **Coolify Management**: https://sitehost-ui.willscookbook.nz
+   - REST API for deployments, status, and application management
+   - API Token: `SITEHOST_UI_API_KEY` (read, write, deploy access)
+   - Documentation: https://coolify.io/docs/api-reference/api/
+   - Can trigger deployments by UUID or tag
 
-### Network Setup
-- Server on VLAN 192.168.2.x (Proxmox host)
-- Coolify exposed via public domain (sitehost-ui.willscookbook.nz)
-- Tailscale VPN available for inter-network access
+3. **Server Runtime**: 192.168.2.151:42420
+   - SSH access: `root@sitehost-1.willscookbook.nz` (via Coolify tunnel)
+   - SSH Key: `~/.ssh/sitehost1`
+   - Container: Docker Compose with Vintage Story server
+
+### How It Works
+- **Version management**: Edit `VERSION` in compose.yaml
+- **Mod management**: Edit `MODS` list in compose.yaml (comma-separated mod IDs)
+- **Mod installation**: `check_and_start.sh` downloads mods from https://mods.vintagestory.at/api/mod/{MOD_ID}
+- **Deployment**: Push to GitHub → Coolify detects → Rebuilds Docker image → Redeploys
+- **Server startup**: Runs `check_and_start.sh` which downloads server binary and mods, then starts server
 
 ## Server Management
 
-### Available Commands
+### SSH Access Pattern
+```bash
+ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker ps"
+```
+
+### Container Operations via SSH
 
 **Status & Logs**
 ```bash
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "docker ps"
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "docker logs vs-server"
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "docker logs vs-server -f"  # follow logs
+# Check container status
+ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker ps | grep vs-server"
+
+# View logs (last 50 lines)
+ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker logs vs-server --tail 50"
+
+# Follow logs in real-time
+ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker logs vs-server -f"
 ```
 
 **Container Control**
 ```bash
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "cd /srv/gameserver && docker compose restart"
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "cd /srv/gameserver && docker compose stop"
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "cd /srv/gameserver && docker compose start"
+# Restart server (triggers mod download and server startup)
+ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker restart vs-server"
+
+# Full compose restart
+ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "cd /srv/gameserver && docker compose restart"
 ```
 
-**Game Server Commands**
+### Server Data Locations
 - Server config: `/srv/gameserver/data/vs/serverconfig.json`
-- Mods directory: `/srv/gameserver/data/vs/Mods`
+- Mods directory: `/srv/gameserver/data/vs/Mods` (auto-downloaded on startup)
 - Saves: `/srv/gameserver/data/vs/Saves`
 - Logs: `/srv/gameserver/data/vs/Logs`
 
 ### Mods Management
 
-Mods are configured in `compose.yaml` via the `MODS` environment variable (comma-separated list).
+Mods are installed automatically from the `MODS` environment variable during container startup.
 
 **To add/remove mods:**
-1. Update `compose.yaml` with new mod list
-2. Restart container: `docker compose restart`
+1. Update `MODS` in `compose.yaml` (comma-separated mod IDs from mods.vintagestory.at)
+2. Commit the change to git
+3. Push to GitHub → Coolify rebuilds and redeploys → Container restarts with new mods
+
+**Mod ID lookup**: Visit https://mods.vintagestory.at and check the mod's mod ID (e.g., "betterarcheology")
 
 **Current mods**: See `compose.yaml` line 18
 
 ### Backups
 
-Backup structure:
-- Saves: `/srv/gameserver/data/vs/Saves/`
-- Backups: `/srv/gameserver/data/vs/Backups/`
-
-Manual backup:
+Backups can be created manually via SSH:
 ```bash
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "tar -czf /srv/gameserver/data/vs/Backups/backup-$(date +%s).tar.gz /srv/gameserver/data/vs/Saves"
+ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz \
+  "tar -czf /srv/gameserver/data/vs/Backups/backup-$(date +%s).tar.gz /srv/gameserver/data/vs/Saves"
 ```
 
 ## Repository Management
