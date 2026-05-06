@@ -417,17 +417,26 @@ Claude can:
 
 ### Complete ✅
 - **Coolify API** - Authenticated and operational
-- **SSH Access** - Via Tailscale to 192.168.2.151 (will user)
-- **Playit.gg Integration** - Secret key configured and ready
+- **SSH Access** - Via Tailscale using `claude` user with SSH key auth (passwordless)
+- **Playit.gg Integration** - Secret key configured and ready (integrating into compose tomorrow)
 - **HTTPS/TLS** - Wildcard certificates installed on both VMs
-- **Three Management Skills** - All fully functional
+- **Three Management Skills** - vintage-story-manage, vintage-story-repo, vintage-story-network all functional
 - **Git Repository** - QuickWaller/vintage-story-server fork deployed via Coolify
+- **Environment Configuration** - All user-specific config moved to `.env` (never published)
+- **Documentation** - README, CLAUDE.md, and skills docs comprehensive and current
+- **Server** - Running 1.22.2 (latest stable) with fresh world, 40+ mods
 
 ### Infrastructure
 - Cloudflare tunnels: sitehost-ui.willscookbook.nz (Coolify), cloudflared agent (playit.gg)
 - Tailscale VPN: Connects across VLAN boundaries for secure access
 - Deployments: GitHub → Coolify (auto-rebuild on push)
 - Mods: Auto-downloaded from mods.vintagestory.at on container startup
+- Error monitoring: filter-errors.sh runs every 1 minute on server
+
+### Tomorrow's Priorities
+1. Eliminate all server startup errors
+2. Integrate playit.gg into docker-compose for standalone deployment
+3. Set up automated cron jobs (daily backups, log rotation, weekly stats)
 
 ## Working Relationship
 
