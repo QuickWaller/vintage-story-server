@@ -14,26 +14,21 @@
 - [x] Support for both stable and unstable (RC) versions
 - [x] Automatic mod downloading and installation from mods.vintagestory.at
 - [x] Pre-configured mod list (40+ mods)
-- [x] New version checks on startup
 - [x] Health checks and container monitoring
 
 **Data & Configuration:**
 - [x] Data folder mounted as volume for saves, mods, configs, and logs
 - [x] Server configuration files (serverconfig.json, servermagicnumbers.json)
-- [x] Automatic backups support
 - [x] Log filtering and error monitoring
 
 **Deployment:**
 - [x] Docker Compose configuration
 - [x] Coolify integration with auto-deployment on git push
-- [x] .NET 8 and .NET 10 runtime support
 - [x] Multi-stage Docker build optimization
 
 **Monitoring:**
-- [x] Server log analysis (server-log-monitor skill)
-- [x] Error and warning filtering
-- [x] Startup sequence capture
-- [x] Network health checks (playit.gg tunnel monitoring)
+- [x] Error and warning filtering via automated log capture
+- [x] Startup sequence logging
 
 ## Quick Start
 
