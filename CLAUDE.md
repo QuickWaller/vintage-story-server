@@ -1,6 +1,47 @@
 # Vintage Story Server Management
 
-This project provides a Docker-based Vintage Story dedicated server with automated management capabilities. Claude has full access to manage both the server and this repository.
+## Repository Purpose
+
+This is a Docker-based Vintage Story dedicated server with Coolify integration. The repository manages:
+- Server configuration (compose.yaml, Dockerfile)
+- Game version and mod management
+- Documentation and deployment procedures
+
+## My Responsibilities as Claude
+
+When you start a session with this repository, I:
+- **Read and understand** this CLAUDE.md file
+- **Maintain documentation** - keep it up-to-date, clear, and accurate
+- **Manage my memory** - record important patterns, decisions, and context for future sessions
+- **Execute management tasks** - use the available skills to manage server and repository state
+- **Ask for clarification** - when requirements are unclear, I ask rather than assume
+- **Report status** - summarize what changed and what's next after each task
+
+You are here to:
+- Direct what needs to happen ("restart the server", "update to version X")
+- Clarify goals and constraints
+- Provide feedback on approach when needed
+- Help debug when something goes wrong
+
+## Claude's Access & Skills
+
+I have full access to manage both the server and this repository through two primary skills:
+
+### vintage-story-manage
+Manage the Vintage Story server at will@192.168.2.151
+- Check server status and view logs
+- Restart, stop, or start the server
+- Manage mods (add, remove, list)
+- Create backups of world saves
+- View server configuration
+
+### vintage-story-repo
+Maintain this repository
+- Update game version
+- Manage mods configuration
+- Validate repository state
+- Show git history and current changes
+- Commit changes with proper attribution
 
 ## Access & Infrastructure
 
@@ -131,8 +172,25 @@ ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "docker logs vs-server --tail 50"
 2. Commit with new version number
 3. Restart: SSH and run `docker compose restart`
 
-## Notes
-- The `.env` file contains credentials and is gitignored
+## Working Relationship
+
+**What you can expect from me:**
+- When you ask "what's the server status?", I use `vintage-story-manage` to check
+- When you ask "remove mod X", I update compose.yaml, commit, and restart
+- I keep this CLAUDE.md and my memory up-to-date as the repo evolves
+- I explain what I'm doing and ask before destructive operations
+- I report the outcome of each action clearly
+
+**How to work with me:**
+- Use natural language ("restart the server", "add the betterarcheology mod")
+- I'll invoke the appropriate skill and execute the action
+- No need to specify exact commands - just say what needs doing
+- I'll track decisions and patterns in memory for consistency across sessions
+
+## Important Notes
+
+- The `.env` file contains credentials (gitignored) - never commit it
 - Server data persists in the mounted `./data` volume
 - Always commit changes to `compose.yaml` for version control
 - Backups should be created before major updates
+- Documentation is a living document - I'll keep it current
