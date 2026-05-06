@@ -139,24 +139,53 @@ ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker restart vs-serv
 ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "cd /srv/gameserver && docker compose restart"
 ```
 
-### Server Data Locations
-- Server config: `/srv/gameserver/data/vs/serverconfig.json`
-- Mods directory: `/srv/gameserver/data/vs/Mods` (auto-downloaded on startup)
-- Saves: `/srv/gameserver/data/vs/Saves`
-- Logs: `/srv/gameserver/data/vs/Logs`
+### Server Directory Structure
 
-### Mods Management
+**On 192.168.2.151** (Coolify managed):
+```
+/data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/
+├── docker-compose.yaml      # Pulled from GitHub, updated by Coolify
+├── .env
+├── README.md
+└── data/                    # Mounted volume (Vintage Story server data)
+    ├── Saves/              # World save files
+    ├── Mods/               # Installed mod .zip files (auto-downloaded)
+    ├── ModConfig/          # Mod configurations
+    ├── ModData/            # Mod runtime data
+    ├── Playerdata/         # Player inventory/data
+    ├── Logs/               # Server logs
+    ├── Backups/            # Manual backups
+    ├── Cache/              # Cached mod unpacking
+    ├── serverconfig.json   # Server settings
+    └── servermagicnumbers.json # Game balance config
+```
 
-Mods are installed automatically from the `MODS` environment variable during container startup.
+**Key files**:
+- `serverconfig.json` - Server configuration (restart needed for changes)
+- `servermagicnumbers.json` - Game balance settings
+- Mods auto-downloaded to `/data/Mods` on startup
 
-**To add/remove mods:**
-1. Update `MODS` in `compose.yaml` (comma-separated mod IDs from mods.vintagestory.at)
-2. Commit the change to git
-3. Push to GitHub → Coolify rebuilds and redeploys → Container restarts with new mods
+### Mods & Version Management
 
-**Mod ID lookup**: Visit https://mods.vintagestory.at and check the mod's mod ID (e.g., "betterarcheology")
+**To change mods or version:**
+1. **Edit in repo**: Update `MODS` list or `VERSION` in `compose.yaml`
+2. **Commit & push**: Push to GitHub (QuickWaller/vintage-story-server)
+3. **Coolify redeploys**: Auto-rebuilds Docker image and restarts container
+4. **Container startup**: `check_and_start.sh` downloads new binary/mods from their respective sources
 
-**Current mods**: See `compose.yaml` line 18
+**Current mods**: See `compose.yaml` line 18 (comma-separated IDs)
+
+**Mod compatibility**: Always check version requirements on https://mods.vintagestory.at before adding
+
+### World Creation
+
+To create a **fresh world**:
+1. **Stop the server** (or let container stop gracefully)
+2. **Delete data folder**: `sudo rm -rf /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data`
+3. **Restore permissions**: `sudo chown root:root /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data && chmod 700 /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data`
+4. **Redeploy**: Container restarts, creates fresh data structure on startup
+
+**Note**: Data folder must be root-owned before container starts to prevent permission issues
 
 ### Backups
 
