@@ -23,6 +23,42 @@ You are here to:
 - Provide feedback on approach when needed
 - Help debug when something goes wrong
 
+## Environment Configuration (.env)
+
+All user-specific configuration is in `.env`. **Never commit `.env` to git** — it contains credentials and secrets.
+
+### Configuration Variables
+
+**Infrastructure & Access:**
+- `SITEHOST_UI_API_KEY` - Coolify API authentication token
+- `COOLIFY_API_BASE` - Coolify API base URL
+- `SITEHOST_1_SSH_KEY_PATH` - Path to SSH private key
+- `SERVER_IP` - Server IP address (192.168.2.151)
+- `SSH_USER` - SSH username (claude)
+- `SSH_HOST` - SSH hostname (sitehost-1.willscookbook.nz)
+- `COOLIFY_APP_ID` - Coolify application identifier
+- `SERVER_DATA_PATH` - Full path to server data directory
+
+**Game Server:**
+- `TZ` - Server timezone (Pacific/Auckland)
+- `VERSION` - Game version (1.22.2)
+
+**Networking:**
+- `PLAYIT_AGENT_ID` - playit.gg agent identifier
+- `PLAYIT_SECRET_KEY` - playit.gg API authentication secret
+- `PLAYIT_PORT` - External port for clients (42420)
+
+**Container Management:**
+- `CONTAINER_NAME` - Docker container name
+- `PLAYIT_CONTAINER` - playit agent container name
+
+### To Update Configuration
+
+1. Edit `.env` with your values
+2. Source the file or use in scripts: `source .env`
+3. Reference variables in commands: `ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST ...`
+4. Never commit `.env` to git
+
 ## Claude's Access & Management
 
 ### vintage-story-manage Skill ✅
@@ -57,18 +93,21 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
 ### API & Access Methods (All Configured ✅)
 
 **Coolify API**
-- **Base URL**: https://sitehost-ui.willscookbook.nz/api/v1
+- **Base URL**: `$COOLIFY_API_BASE` (from `.env`)
 - **Authentication**: Bearer token via `SITEHOST_UI_API_KEY`
 - **Status**: ✅ Working (v4.0.0-beta.474)
 - **Capabilities**: Applications, servers, deployments, terminal access
 - **Limitations**: Cannot read secrets (by design)
+- **App ID**: `$COOLIFY_APP_ID`
 
 **SSH Access**
-- **Method**: Via Tailscale to 192.168.2.151
-- **User**: will (standard user)
-- **Key**: `~/.ssh/sitehost1`
+- **Method**: Via Tailscale to `$SERVER_IP`
+- **User**: `$SSH_USER`
+- **Key**: `$SITEHOST_1_SSH_KEY_PATH`
+- **Host**: `$SSH_HOST`
 - **Status**: ✅ Working
 - **Capabilities**: Full shell access, container management, file access
+- **Configured in**: `.env`
 
 **Playit.gg Infrastructure**
 - **Agent**: Running in Docker container (playit-ok1p0160sc31ifys5zp6pa1z)
@@ -114,8 +153,10 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
 ## Server Management
 
 ### SSH Access Pattern
+
+Using environment variables from `.env`:
 ```bash
-ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker ps"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker ps"
 ```
 
 ### Container Operations via SSH
@@ -123,29 +164,35 @@ ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker ps"
 **Status & Logs**
 ```bash
 # Check container status
-ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker ps | grep vs-server"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker ps | grep $CONTAINER_NAME"
 
 # View logs (last 50 lines)
-ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker logs vs-server --tail 50"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker logs $CONTAINER_NAME --tail 50"
 
 # Follow logs in real-time
-ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker logs vs-server -f"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker logs $CONTAINER_NAME -f"
 ```
 
 **Container Control**
 ```bash
 # Restart server (triggers mod download and server startup)
-ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "docker restart vs-server"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker restart $CONTAINER_NAME"
 
 # Full compose restart
-ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "cd /srv/gameserver && docker compose restart"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker compose restart"
 ```
+
+**Configured in `.env`:**
+- `SITEHOST_1_SSH_KEY_PATH` - SSH private key path
+- `SSH_USER` - SSH username (claude)
+- `SSH_HOST` - SSH host address
+- `CONTAINER_NAME` - Docker container name
 
 ### Server Directory Structure
 
-**On 192.168.2.151** (Coolify managed):
+**On `$SERVER_IP`** (Coolify managed):
 ```
-/data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/
+$SERVER_DATA_PATH/
 ├── docker-compose.yaml      # Pulled from GitHub, updated by Coolify
 ├── .env
 ├── README.md
@@ -162,6 +209,11 @@ ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "cd /srv/gameserver && 
     └── servermagicnumbers.json # Game balance config
 ```
 
+**All paths defined in `.env` as:**
+- `SERVER_IP` - Server IP address
+- `SERVER_DATA_PATH` - Full path to server data directory
+- `COOLIFY_APP_ID` - Coolify application ID
+
 **Key files**:
 - `serverconfig.json` - Server configuration (restart needed for changes)
 - `servermagicnumbers.json` - Game balance settings
@@ -171,11 +223,17 @@ ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "cd /srv/gameserver && 
 
 **To change mods or version:**
 1. **Edit in repo**: Update `MODS` list or `VERSION` in `compose.yaml`
-2. **Commit & push**: Push to GitHub (QuickWaller/vintage-story-server)
-3. **Coolify redeploys**: Auto-rebuilds Docker image and restarts container
-4. **Container startup**: `check_and_start.sh` downloads new binary/mods from their respective sources
+2. **Or update `.env`**: Set `VERSION` and game configuration
+3. **Commit & push**: Push to GitHub (QuickWaller/vintage-story-server)
+4. **Coolify redeploys**: Auto-rebuilds Docker image and restarts container
+5. **Container startup**: `check_and_start.sh` downloads new binary/mods from their respective sources
 
-**Current mods**: See `compose.yaml` line 18 (comma-separated IDs)
+**Current mods**: See `compose.yaml` MODS environment variable (comma-separated IDs)
+
+**Version & configuration in `.env`:**
+- `VERSION=1.22.2` - Game version to run
+- `TZ=Pacific/Auckland` - Server timezone
+- Can override in compose.yaml if needed
 
 **Mod compatibility**: Always check version requirements on https://mods.vintagestory.at before adding
 
@@ -199,8 +257,9 @@ To create a **fresh world**:
 A filter script runs every 1 minute on the server to capture errors and startup sequences:
 
 **Script location**: `/usr/local/bin/filter-errors.sh`  
-**Output file**: `/data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log`  
+**Output file**: `$SERVER_DATA_PATH/error-summary.log`  
 **Update frequency**: Every 1 minute via cron
+**Configured in**: `.env` as `SERVER_DATA_PATH`
 
 **What it captures**:
 - Full startup sequence (mod loading, initialization, system info)
@@ -210,14 +269,14 @@ A filter script runs every 1 minute on the server to capture errors and startup 
 
 **Quick health check (interactive):**
 ```bash
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 \
-  "sudo cat /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log | head -50"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST \
+  "sudo cat $SERVER_DATA_PATH/error-summary.log | head -50"
 ```
 
 **Force refresh and show latest:**
 ```bash
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 \
-  "sudo /usr/local/bin/filter-errors.sh && cat /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST \
+  "sudo /usr/local/bin/filter-errors.sh && cat $SERVER_DATA_PATH/error-summary.log"
 ```
 
 For automated/scheduled monitoring, use the `server-log-monitor` skill instead.
