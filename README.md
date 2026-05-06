@@ -1,117 +1,229 @@
-# Vintage Story Dedicated Server
-> Nice and simple to setup Docker container for running your own dedicated Vintage Story server!
+# Vintage Story Dedicated Server (Enhanced Fork)
+
+> Docker-based Vintage Story dedicated server with automatic mod management, built-in logging, and Coolify deployment support.
 
 > [!NOTE]
-> This container supports both stable and release candidate (unstable) versions of Vintage Story. 
+> This is an enhanced fork of [quartzar/vintage-story-server](https://github.com/quartzar/vintage-story-server) with added mod management, comprehensive logging, and deployment automation.
 
 ## Features
-- [x] Easy version configuration
+
+**Server Management:**
+- [x] Easy version configuration (currently 1.22.2)
 - [x] Support for both stable and unstable (RC) versions
+- [x] Automatic mod downloading and installation from mods.vintagestory.at
+- [x] Pre-configured mod list (40+ mods)
 - [x] New version checks on startup
-- [x] Data folder mounted as volume for easy management of saves, worlds, and server settings
-- [x] Prebuilt Docker images for easy deployment
-- [ ] Better documentation
-- [ ] Webhook support for notifications/logs
-- [ ] Robust backup support
-- [ ] Automated server restarts
-- [ ] Easy to use web interface for server management (!)
+- [x] Health checks and container monitoring
 
+**Data & Configuration:**
+- [x] Data folder mounted as volume for saves, mods, configs, and logs
+- [x] Server configuration files (serverconfig.json, servermagicnumbers.json)
+- [x] Automatic backups support
+- [x] Log filtering and error monitoring
 
+**Deployment:**
+- [x] Docker Compose configuration
+- [x] Coolify integration with auto-deployment on git push
+- [x] .NET 8 and .NET 10 runtime support
+- [x] Multi-stage Docker build optimization
 
-### Requirements
-- Docker - https://docs.docker.com/get-docker/
+**Monitoring:**
+- [x] Server log analysis (server-log-monitor skill)
+- [x] Error and warning filtering
+- [x] Startup sequence capture
+- [x] Network health checks (playit.gg tunnel monitoring)
 
-- A PC to host the server from (can be the same one you play on). Official hardware requirements:
+## Quick Start
+
+### Using Docker Compose (Recommended)
+
+1. Clone or fork this repository
+2. Copy `compose.yaml` to your server directory
+3. Create a `data` directory: `mkdir data`
+4. Update VERSION and MODS as needed in `compose.yaml`
+5. Start the server:
+   ```bash
+   docker compose up -d
+   ```
+6. Connect to your server at `<your-ip>:42420`
+
+### Custom Configuration
+
+Edit the `compose.yaml` environment variables:
+
+```yaml
+environment:
+  - TZ=Pacific/Auckland              # Your timezone
+  - VERSION=1.22.2                   # Game version
+  - MODS=betterruins,watersheds,...  # Comma-separated mod IDs
+```
+
+**Current mod list** (from `compose.yaml`):
+betterruins, watersheds, egocaribautomapmarkers, bloodtrail, medievalarchitecture, falandsknecht, fagothic, fahussar, deathcorpses, favarangian, fadynasties, plushiemodpack, healingsprings, offlinefoodnospoil, forestregenmod, tungsten, undergroundmines, vanillapluspatch, easybuilding, attributerenderinglibrary, ggbcsrepair, lostandfound, buzzwords, aldiclasses, stepupadvanced, charlottesclothes, xskillsgilded, vsimgui, xlibfork, xskillsfork, vsvillage, em, firewoodtosticks, hardcorewaterevolved, vsextbedrespawn, antiqueharmony, antiqueensemble, realsmoke, opineuponpine, ndltreehollows
+
+See https://mods.vintagestory.at for the full mod catalog and version compatibility.
+
+### Data Directory Structure
+
+After first startup, your `data/` folder will contain:
+
+```
+data/
+├── Saves/              # World save files
+├── Mods/               # Installed mod .zip files (auto-downloaded)
+├── ModConfig/          # Mod configuration
+├── ModData/            # Mod runtime data
+├── Playerdata/         # Player inventory and data
+├── Logs/               # Server logs (server-main.log, server-debug.log)
+├── Backups/            # Manual backups
+├── serverconfig.json   # Server settings
+└── servermagicnumbers.json  # Game balance config
+```
+
+### Server Configuration
+
+Edit `data/serverconfig.json` to customize:
+- Server name and description
+- World generation settings
+- Player slots and difficulty
+- Permissions and admin lists
+
+**Restart the server** after changes: `docker compose restart`
+
+## Requirements
+
+- **Docker** - https://docs.docker.com/get-docker/
+- **Hardware** (Official Vintage Story recommendations):
   - **OS**: Windows or Linux
-  - **CPU**: 4 Threads recommended. Frequency: 1GHz base + 100MHz per player
+  - **CPU**: 4 Threads recommended (1GHz base + 100MHz per player)
   - **RAM**: 1GB base + 300MB per player
+- **Network**: Port 42420 (default, customizable)
 
-## Usage / Setup
+## Development & Building
 
-### Quick Start
+### Building Locally
 
-Create a directory for where you want to store the `compose.yaml` and server data. Let's call it `vintage-story-server` for this example. Make sure to create a `data` directory in the `vintage-story-server` directory first, and then create a `compose.yaml` file in the `vintage-story-server` directory with the following contents:
-```yaml
-services:
-  vintage-story:
-    image: quartzar/vintage-story-server:latest
-    pull_policy: always
-    container_name: vs-server
-    restart: unless-stopped
-    ports:
-      - "42420:42420"  # HOST:CONTAINER - Change the HOST port if you want to use a different port
-    volumes:
-      - ./data:/srv/gameserver/data/vs
-    environment:
-      - TZ=Europe/London  # Set to your timezone (optional)
-      - VERSION=1.22.0-rc.7   # Game version - works with release candidates (unstable) as well as regular releases (stable)
-    stdin_open: true
-    tty: true
-```
-**Make sure to set the `VERSION` of the game you wish to use** - it will work with both stable and unstable versions. Visit the [Vintage Story website](https://www.vintagestory.at/) to find the latest version number.
+```bash
+# Clone the repository
+git clone https://github.com/QuickWaller/vintage-story-server.git
+cd vintage-story-server
 
-Run `docker compose up -d` in the `vintage-story-server` directory to start the server, and that's it! 
+# Build the Docker image
+docker compose build
 
-You can now connect to your server using the IP of the host machine and the port you specified in the `compose.yaml` file (default is `42420`). 
-
-To stop the container, just run `docker compose down` in the `vintage-story-server` directory.
-
-> [!WARNING]
-> **Do not run the server without the `data` directory already created!** 
->
-> This is required as otherwise the server will create one for you with admin/root permissions!
-
-#### Extra Tips
-
-Often it's easier to generate a world in singleplayer first and copy it over - you can do this after starting the server at least once, stopping it (`docker compose down` or `CTRL+C` if you didn't start it detached (`-d`)), and copying the world save into `./data/Saves` in the `vintage-story-server` directory.
-
-
-
-If you want to edit the server settings, they can be found in the `data` directory you created, once the server has started, along with world saves, backups, mods, logs, and more. Just make sure to restart the server when making changes to the `serverconfig.json`/`servermagicnumbers.json` file.
-
-Optionally, you could also create a Docker volume instead of using the local bind mount to `./data` for the server data. This is useful if you want to manage the server data separately from the server container. To do this, create a volume with `docker volume create vs-data` and then replace the `volumes` section in the `compose.yaml` file with `- vs-data:/srv/gameserver/data/vs`. Technically, you could remove the volume mount all together, but this is not recommended as it will make it harder to manage the server data (you'd need to enter the container/use `docker cp` commands).
-
-
-
-
-
-### Development 
-
-Create a directory for where you want to store the `compose.yaml` and server data. Let's call it `vintage-story-server` for this example.
-
-Create a `compose.yaml` file in the `vintage-story-server` directory with the following contents:
-```yaml
-services:
-  vintage-story:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    container_name: vs-server
-    restart: unless-stopped
-    ports:
-      - "42420:42420"
-    volumes:
-      - ./data:/srv/gameserver/data/vs
-    environment:
-      - TZ=Europe/London  # Set to your timezone
-      - VERSION=1.20.0-rc.1   # Game version - works with release candidates (unstable) as well as regular releases (stable)
-    stdin_open: true
-    tty: true
+# Start the server
+docker compose up -d
 ```
 
-Create a `Dockerfile` file in the `vintage-story-server` directory and paste the content from [here](Dockerfile) into it.
+### Dockerfile Details
 
-**IMPORTANT**: Create a `data` directory in the `vintage-story-server` directory. This is where the server data will be stored.
+The `Dockerfile`:
+- Uses .NET 10 as primary runtime with .NET 8 support
+- Downloads the Vintage Story server binary for your VERSION
+- Automatically downloads and installs mods from mods.vintagestory.at
+- Optimizes Docker layer caching for faster rebuilds
+- Runs as non-root gameserver user (security best practice)
 
-Run `docker-compose up -d` in the `vintage-story-server` directory to start the server.
+## Management
 
+### Viewing Logs
 
+Real-time server logs:
+```bash
+docker logs -f vintage-story-kjbe9vn1omxtdnjzyiopjlrs
+```
 
+Filtered error summary:
+```bash
+docker exec vintage-story-kjbe9vn1omxtdnjzyiopjlrs \
+  cat /data/error-summary.log | head -50
+```
 
+### Backups
 
+Create a backup before major updates:
+```bash
+docker exec vintage-story-kjbe9vn1omxtdnjzyiopjlrs \
+  tar -czf /srv/gameserver/data/vs/Backups/backup-$(date +%s).tar.gz \
+  /srv/gameserver/data/vs/Saves
+```
 
+### Fresh World
 
+To reset and create a fresh world with new mods:
+```bash
+docker stop vintage-story-kjbe9vn1omxtdnjzyiopjlrs
+rm -rf data/Saves data/Mods data/Cache
+docker start vintage-story-kjbe9vn1omxtdnjzyiopjlrs
+```
 
+### Adding/Removing Mods
 
+1. Update the `MODS` list in `compose.yaml` (comma-separated mod IDs)
+2. Commit and push the change
+3. Container restarts and mods are auto-downloaded
+4. Server will use new mods on next restart
 
+## Deployment via Coolify
 
+This fork is configured for automated Coolify deployment:
+
+1. Fork this repository to your GitHub account
+2. Connect your GitHub account in Coolify
+3. Create a Docker Compose application pointing to this repo
+4. Coolify will auto-detect and rebuild on:
+   - Changes to `compose.yaml` (VERSION or MODS)
+   - Changes to `Dockerfile`
+   - Any other modifications to tracked files
+
+### Coolify Configuration
+
+Set environment variables in Coolify dashboard:
+- `VERSION` - Game version (e.g., `1.22.2`)
+- `TZ` - Server timezone (e.g., `Pacific/Auckland`)
+- `MODS` - Comma-separated mod list
+
+## Troubleshooting
+
+**Server won't start:**
+- Check logs: `docker logs vintage-story-...`
+- Verify VERSION is valid on https://www.vintagestory.at
+- Ensure mods exist and are compatible with your VERSION
+
+**Mods failing to download:**
+- Check mod IDs on https://mods.vintagestory.at
+- Verify mod VERSION compatibility requirements
+- See logs for specific error messages
+
+**Players can't connect:**
+- Verify port 42420 is accessible
+- Check firewall and port forwarding
+- Test: `ping <server-ip>`
+- Check network tunnel status (if using playit.gg)
+
+**Permission issues with data directory:**
+- Ensure data folder is owned by UID 1000 (gameserver user)
+- If deleted manually, reset with: `sudo chown 1000:1000 data && sudo chmod 755 data`
+
+## What's Different from Upstream?
+
+This fork adds:
+
+- **Automatic mod management** - Configure mods in compose.yaml, auto-download on startup
+- **Error filtering** - Automated log analysis and error detection
+- **Improved documentation** - Comprehensive CLAUDE.md for management via Claude
+- **Coolify automation** - Git-to-deployment pipeline
+- **Network monitoring** - playit.gg tunnel health checks
+- **Better logging** - Server log capture and analysis tools
+
+The upstream repository is at https://github.com/quartzar/vintage-story-server
+
+## Contributing
+
+Found a bug or have a suggestion?
+- Open an issue in this repository
+- For upstream improvements, see https://github.com/quartzar/vintage-story-server
+
+## License
+
+This project maintains the same license as the original upstream repository.
