@@ -38,10 +38,19 @@ Manage the Vintage Story server via SSH and Coolify API
 Maintain this repository and trigger deployments
 - **Version updates**: Update `VERSION` in compose.yaml for game updates
 - **Mod management**: Add/remove mods by updating MODS list
-- **Deployment**: Commit changes and trigger Coolify rebuild/deploy via API
+- **Deployment**: Commit changes and push to GitHub (Coolify auto-deploys)
 - **Validation**: Check repository structure, git status, mod compatibility
 - **Git operations**: Review history, diff changes, merge upstream updates
+- **Upstream sync**: Pull updates from original quartzar/vintage-story-server repo
 - **Documentation**: Keep CLAUDE.md and skills documentation current
+
+### vintage-story-network Skill (playit.gg)
+Monitor and manage the client tunnel infrastructure
+- **Tunnel status**: Check if playit tunnel is healthy and accepting connections
+- **Agent status**: Verify playit agent is online and connected
+- **Connection monitoring**: Monitor active client connections
+- **Tunnel operations**: Create/delete tunnels if needed (rare)
+- **Diagnostics**: Troubleshoot connectivity issues for players
 
 ### Coolify API Access
 - **Base URL**: https://sitehost-ui.willscookbook.nz/api/v1
@@ -138,38 +147,69 @@ ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz \
   "tar -czf /srv/gameserver/data/vs/Backups/backup-$(date +%s).tar.gz /srv/gameserver/data/vs/Saves"
 ```
 
-## Repository Management
+## Repository Structure
 
-### Structure
 ```
 vintage-story-server/
-├── compose.yaml          # Docker Compose config (local dev)
-├── Dockerfile           # Server image definition
-├── README.md            # User documentation
-├── CLAUDE.md            # This file
-├── .env                 # Credentials (gitignored)
-├── scripts/             # Management scripts
-│   ├── server-manage.sh # Server management tasks
-│   └── repo-maintain.sh # Repository maintenance
-└── data/                # Server data volume (gitignored)
+├── compose.yaml          # Docker Compose - VERSION and MODS config
+├── Dockerfile            # Multi-stage build: .NET 8/10, downloads and runs scripts
+├── README.md             # User-facing documentation
+├── CLAUDE.md             # This file - Claude's management guide
+├── .env                  # Credentials (gitignored)
+│   ├── SITEHOST_UI_API_KEY        # Coolify API token
+│   └── SITEHOST_1_SSH_KEY_PATH    # SSH key path for server access
+├── scripts/              # Container entry point scripts
+│   ├── download_server.sh          # Downloads Vintage Story binary
+│   └── check_and_start.sh          # Version check, mod download, server startup
+├── skills/               # Skill documentation
+│   ├── vintage-story-manage.md     # Server management operations
+│   ├── vintage-story-repo.md       # Repository maintenance
+│   └── vintage-story-network.md    # Network/tunnel monitoring (playit.gg)
+├── .github/              # GitHub Actions workflows
+└── data/                 # Server data volume (gitignored)
+    ├── Saves/            # Game world saves
+    ├── Mods/             # Installed mods (auto-downloaded)
+    ├── Logs/             # Server logs
+    └── Backups/          # Manual backups
 ```
 
-### Maintenance Tasks
+### How It Works
+
+1. **Local changes** → `compose.yaml` (VERSION, MODS)
+2. **Commit to GitHub** → QuickWaller/vintage-story-server fork
+3. **Coolify detects push** → Rebuilds Docker image
+4. **Docker build** → Copies scripts, sets up .NET runtimes
+5. **Container starts** → `check_and_start.sh` runs:
+   - Checks if VERSION changed, downloads server binary if needed
+   - Downloads each mod from mods.vintagestory.at API
+   - Starts Vintage Story server with `/srv/gameserver/data/vs` data path
+6. **playit.gg tunnel** → Connects clients to server (port 42420)
+7. **Players connect** → Via playit.gg tunnel to sitehost-1.willscookbook.nz
+
+### Maintenance Workflow
 
 **Update Game Version**
-1. Update `VERSION` in `compose.yaml`
-2. Restart container: `docker compose restart`
-3. Commit changes
+1. Update `VERSION=X.Y.Z` in `compose.yaml`
+2. Commit with message: `Update game version to X.Y.Z`
+3. Push to GitHub → Coolify rebuilds → Container restarts
+4. Server downloads new binary on startup
 
-**Add/Remove Mods**
-1. Update `MODS` list in `compose.yaml`
-2. Commit with reason
-3. Restart container
+**Add a Mod**
+1. Find mod ID on https://mods.vintagestory.at (e.g., "betterarcheology")
+2. Add to `MODS` list in `compose.yaml` (comma-separated)
+3. Commit: `Add mod: betterarcheology`
+4. Push → Coolify rebuilds → Server downloads mod on restart
+5. Check version compatibility before adding
 
-**Update Dockerfile**
-1. Modify `Dockerfile`
-2. Rebuild: `docker compose build --no-cache`
-3. Restart: `docker compose up -d`
+**Remove a Mod**
+1. Remove from `MODS` list in `compose.yaml`
+2. Commit: `Remove mod: walkingstick`
+3. Push → Coolify rebuilds → Old mod not downloaded on restart
+
+**Update Dockerfile/Scripts**
+1. Modify `Dockerfile` or scripts in `scripts/`
+2. Commit changes
+3. Push → Coolify rebuilds with new image
 
 ## Claude Access & Automation
 
@@ -185,27 +225,51 @@ Claude can:
 - SSH: `~/.ssh/sitehost1`
 - Coolify API: `SITEHOST_UI_API_KEY` in `.env`
 
-## Common Tasks
+## Common Tasks & Examples
 
-### Check Server Status
-```bash
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "docker ps | grep vs-server"
-```
+### "Check the server status"
+→ Uses `vintage-story-manage`
+- Runs: `docker ps | grep vs-server` via SSH
+- Returns: Container state, uptime, health
 
-### View Recent Logs
-```bash
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "docker logs vs-server --tail 50"
-```
+### "Show me recent logs"
+→ Uses `vintage-story-manage`
+- Runs: `docker logs vs-server --tail 50` via SSH
+- Returns: Last 50 lines of server output
 
-### Remove a Mod
-1. Edit `compose.yaml` - remove mod from `MODS` list
-2. Commit: `git commit -am "Remove [mod-name]"`
-3. Restart: SSH and run `docker compose restart`
+### "Update to version 1.23.0"
+→ Uses `vintage-story-repo`
+1. Edits `compose.yaml`: `VERSION=1.23.0`
+2. Commits: `Update game version to 1.23.0`
+3. Pushes to GitHub → Coolify rebuilds → Server downloads new binary
 
-### Update Game Version
-1. Edit `compose.yaml` - update `VERSION` value
-2. Commit with new version number
-3. Restart: SSH and run `docker compose restart`
+### "Add the betterarcheology mod"
+→ Uses `vintage-story-repo`
+1. Adds to `MODS` list in `compose.yaml`
+2. Commits: `Add mod: betterarcheology`
+3. Pushes → Coolify rebuilds → Server downloads mod on next restart
+
+### "Remove the walkingstick mod"
+→ Uses `vintage-story-repo`
+1. Removes from `MODS` list
+2. Commits: `Remove mod: walkingstick`
+3. Pushes → Server won't download it on restart
+
+### "Check if clients can connect"
+→ Uses `vintage-story-network` (playit.gg)
+- Checks tunnel status
+- Verifies agent is online
+- Reports connection health
+
+### "Create a backup"
+→ Uses `vintage-story-manage`
+- Runs: `tar -czf backup-[timestamp].tar.gz /srv/gameserver/data/vs/Saves`
+- Stores in: `/srv/gameserver/data/vs/Backups/`
+
+### "Check what mods are installed"
+→ Uses `vintage-story-repo`
+- Reads: `MODS` list from `compose.yaml`
+- Returns: All active mods with versions
 
 ## Working Relationship
 
@@ -222,10 +286,38 @@ ssh -i ~/.ssh/sitehost1 will@192.168.2.151 "docker logs vs-server --tail 50"
 - No need to specify exact commands - just say what needs doing
 - I'll track decisions and patterns in memory for consistency across sessions
 
-## Important Notes
+## Important Notes & Security
 
-- The `.env` file contains credentials (gitignored) - never commit it
-- Server data persists in the mounted `./data` volume
-- Always commit changes to `compose.yaml` for version control
-- Backups should be created before major updates
-- Documentation is a living document - I'll keep it current
+### Credentials Management
+- **`.env` file** - Contains API keys and SSH paths (NEVER commit, gitignored)
+- **playit secret key** - Grants full tunnel control (keep private)
+- **Coolify API token** - Can trigger deployments (limited permissions)
+- **SSH private key** - Local filesystem access to server (secure)
+
+### Deployment Safety
+- Changes flow through: Git commit → GitHub push → Coolify detection → Docker rebuild → Server restart
+- This audit trail prevents accidental changes
+- Always verify `compose.yaml` changes before pushing
+- Test mod compatibility before adding to MODS list
+
+### Data Management
+- **Saves are valuable** - Located in `/srv/gameserver/data/vs/Saves`
+- **Mods auto-download** - No manual copying needed, download happens on container startup
+- **Backups** - Create before major updates or version changes
+- **Logs** - Available at `/srv/gameserver/data/vs/Logs` for debugging
+
+### Upstream Repository
+- Original: https://github.com/quartzar/vintage-story-server
+- Your fork: https://github.com/QuickWaller/vintage-story-server (with mod scripts)
+- Can pull upstream changes to stay updated with improvements
+
+### Mod Compatibility
+- **Always check version compatibility** on https://mods.vintagestory.at
+- Mods must match your `VERSION` setting
+- Check the mod's "Files" table for version requirements
+- Incompatible mods will cause server startup failures
+
+### Documentation
+- This CLAUDE.md is the source of truth for my responsibilities and operations
+- I maintain it as the repo evolves
+- Skills documentation in `skills/` directory describes what I can do
