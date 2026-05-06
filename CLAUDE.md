@@ -70,11 +70,13 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
 - **Status**: ✅ Working
 - **Capabilities**: Full shell access, container management, file access
 
-**Playit.gg API**
-- **Secret Key**: Stored in `.env` as `PLAYIT_SECRET_KEY`
-- **Agent Status**: Running (container: playit-ok1p0160sc31ifys5zp6pa1z)
-- **Status**: ✅ Ready for use
-- **Capabilities**: Tunnel management, client monitoring, agent status
+**Playit.gg Infrastructure**
+- **Agent**: Running in Docker container (playit-ok1p0160sc31ifys5zp6pa1z)
+- **Secret Key**: `PLAYIT_SECRET_KEY` in `.env` — used by agent for backend authentication
+- **API**: No public REST API. Agent uses internal Rust client library for all tunnel/backend operations
+- **Tunnel**: Configured to route clients to sitehost-1.willscookbook.nz on port 42420
+- **Status**: ✅ Active and accepting player connections
+- **Management**: Tunnel configuration managed through agent, not via public API
 
 ### Network Setup
 - **Server**: 192.168.2.151 on internal VLAN (Proxmox host)
@@ -180,12 +182,45 @@ ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz "cd /srv/gameserver && 
 ### World Creation
 
 To create a **fresh world**:
-1. **Stop the server** (or let container stop gracefully)
+1. **Stop the server**: `docker stop vintage-story-kjbe9vn1omxtdnjzyiopjlrs`
 2. **Delete data folder**: `sudo rm -rf /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data`
-3. **Restore permissions**: `sudo chown root:root /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data && chmod 700 /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data`
-4. **Redeploy**: Container restarts, creates fresh data structure on startup
+3. **Restore permissions** (gameserver user UID 1000): 
+   ```bash
+   sudo mkdir -p /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data
+   sudo chown 1000:1000 /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data
+   sudo chmod 755 /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data
+   ```
+4. **Restart**: `docker start vintage-story-kjbe9vn1omxtdnjzyiopjlrs`
 
-**Note**: Data folder must be root-owned before container starts to prevent permission issues
+**Note**: Data folder must be owned by UID 1000 (gameserver user inside container) so it can download mods and create world files
+
+### Server Log Monitoring
+
+A filter script runs every 1 minute on the server to capture errors and startup sequences:
+
+**Script location**: `/usr/local/bin/filter-errors.sh`  
+**Output file**: `/data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log`  
+**Update frequency**: Every 1 minute via cron
+
+**What it captures**:
+- Full startup sequence (mod loading, initialization, system info)
+- All ERROR, CRITICAL, Exception, Failed, crash entries
+- Line numbers and timestamps for quick reference
+- Organized by log file (server-main.log, server-debug.log)
+
+**Quick health check (interactive):**
+```bash
+ssh -i ~/.ssh/sitehost1 will@192.168.2.151 \
+  "sudo cat /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log | head -50"
+```
+
+**Force refresh and show latest:**
+```bash
+ssh -i ~/.ssh/sitehost1 will@192.168.2.151 \
+  "sudo /usr/local/bin/filter-errors.sh && cat /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log"
+```
+
+For automated/scheduled monitoring, use the `server-log-monitor` skill instead.
 
 ### Backups
 
