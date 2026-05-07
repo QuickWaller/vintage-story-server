@@ -15,6 +15,7 @@ RUN rm -f /etc/apt/apt.conf.d/docker-clean && \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
+        cron \
         jq \
         wget \
     && rm -rf /var/lib/apt/lists/*
@@ -32,14 +33,16 @@ RUN mkdir -p /srv/gameserver/vintagestory \
 WORKDIR /srv/gameserver/vintagestory
 
 # Copy scripts into the container
-COPY --chown=gameserver:gameserver scripts/download_server.sh /srv/gameserver/vintagestory/
-COPY --chown=gameserver:gameserver scripts/check_and_start.sh /srv/gameserver/vintagestory/
+COPY scripts/download_server.sh /srv/gameserver/vintagestory/
+COPY scripts/check_and_start.sh /srv/gameserver/vintagestory/
+COPY scripts/entrypoint.sh /srv/gameserver/vintagestory/
+COPY scripts/backup.sh /srv/gameserver/vintagestory/
+COPY scripts/log-rotate.sh /srv/gameserver/vintagestory/
+COPY scripts/crontab /srv/gameserver/vintagestory/
 
-# Make scripts executable
-RUN chmod +x /srv/gameserver/vintagestory/*.sh
-
-USER gameserver
+RUN chmod +x /srv/gameserver/vintagestory/*.sh && \
+    chown -R gameserver:gameserver /srv/gameserver/vintagestory
 
 EXPOSE 1079
 
-ENTRYPOINT ["/srv/gameserver/vintagestory/check_and_start.sh"]
+ENTRYPOINT ["/srv/gameserver/vintagestory/entrypoint.sh"]
