@@ -1,0 +1,8 @@
+SHELL=/bin/bash
+TZ=Pacific/Auckland
+
+# Daily backup at 3am NZ time
+0 3 * * * /srv/gameserver/vintagestory/backup.sh >> /srv/gameserver/data/vs/Logs/backup.log 2>&1
+
+# Log rotation at 4am NZ time
+0 4 * * * /srv/gameserver/vintagestory/log-rotate.sh >> /srv/gameserver/data/vs/Logs/log-rotate.log 2>&1
