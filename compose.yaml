@@ -15,7 +15,7 @@ services:
     environment:
       - TZ=Pacific/Auckland  # Set to your timezone
       - VERSION=1.22.2  # Game version - works with release candidates (unstable) as well as regular releases (stable)
-      - MODS=betterruins,watersheds,egocaribautomapmarkers,bloodtrail,medievalarchitecture,falandsknecht,fagothic,fahussar,deathcorpses,favarangian,fadynasties,plushiemodpack,healingsprings,offlinefoodnospoil,forestregenmod,tungsten,undergroundmines,vanillapluspatch,easybuilding,attributerenderinglibrary,ggbcsrepair,lostandfound,buzzwords,aldiclasses,stepupadvanced,charlottesclothes,xskillsgilded,vsimgui,xlibfork,xskillsfork,vsvillage,em,firewoodtosticks,hardcorewaterevolved,vsextbedrespawn,antiqueharmony,antiqueensemble,realsmoke,opineuponpine,ndltreehollows
+      - MODS=betterruins,watersheds,egocaribautomapmarkers,bloodtrail,medievalarchitecture,falandsknecht,fagothic,fahussar,deathcorpses,favarangian,fadynasties,fajousting,faviking,fatemplar,fagreenwich,bettertraders,healingsprings,offlinefoodnospoil,forestregenmod,tungsten,undergroundmines,terraprety,easybuilding,attributerenderinglibrary,ggbcsrepair,lostandfound,buzzwords,aldiclasses,stepupadvanced,charlottesclothes,xskillsgilded,vsimgui,xlibfork,xskillsfork,em,firewoodtosticks,hardcorewaterevolved,vsextbedrespawn,antiqueharmony,antiqueensemble,realsmoke,opineuponpine,ndltreehollows,canjewelry,roomtools,butchering,automaticforging,spinningwheel,knitting,fishingplus
     stdin_open: true
     tty: true
     healthcheck:
