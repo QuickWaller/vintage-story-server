@@ -120,7 +120,7 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
 ### Network Setup
 - **Server**: 192.168.2.151 on internal VLAN (Proxmox host)
 - **Client tunnel**: playit.gg handles Vintage Story client connections
-- **Management SSH**: Via Tailscale to 192.168.2.151 (user: will)
+- **Management SSH**: Via Tailscale to 192.168.2.151 (user: claude)
 - **Coolify UI**: https://sitehost-ui.willscookbook.nz (cloudflared tunnel, HTTPS with wildcard certs)
 - **VPN**: Tailscale provides secure network access across VLANs
 - **Certificates**: Wildcard SSL for *.willscookbook.nz installed on both VMs
@@ -139,8 +139,8 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
    - Can trigger deployments by UUID or tag
 
 3. **Server Runtime**: 192.168.2.151:42420
-   - SSH access: `root@sitehost-1.willscookbook.nz` (via Coolify tunnel)
-   - SSH Key: `~/.ssh/sitehost1`
+   - SSH access: `claude@192.168.2.151` (via Tailscale, requires `sudo` for docker commands)
+   - SSH Key: `$SITEHOST_1_SSH_KEY_PATH` from `.env`
    - Container: Docker Compose with Vintage Story server
 
 ### How It Works
@@ -154,9 +154,10 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
 
 ### SSH Access Pattern
 
-Using environment variables from `.env`:
+**Always use `SERVER_IP` (192.168.2.151) directly** — `SSH_HOST` (`sitehost-1.willscookbook.nz`) is unreachable. The `claude` user requires `sudo` for all docker commands.
+
 ```bash
-ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker ps"
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker ps"
 ```
 
 ### Container Operations via SSH
@@ -164,60 +165,74 @@ ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker ps"
 **Status & Logs**
 ```bash
 # Check container status
-ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker ps | grep $CONTAINER_NAME"
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker ps | grep $CONTAINER_NAME"
 
 # View logs (last 50 lines)
-ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker logs $CONTAINER_NAME --tail 50"
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker logs $CONTAINER_NAME --tail 50"
 
-# Follow logs in real-time
-ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker logs $CONTAINER_NAME -f"
+# View startup errors only
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker logs $CONTAINER_NAME 2>&1 | grep '\[Server Error\]'"
 ```
 
 **Container Control**
 ```bash
-# Restart server (triggers mod download and server startup)
-ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker restart $CONTAINER_NAME"
+# Stop server
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker stop $CONTAINER_NAME"
 
-# Full compose restart
-ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST "docker compose restart"
+# Start server
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker start $CONTAINER_NAME"
+
+# Restart server
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker restart $CONTAINER_NAME"
 ```
 
-**Configured in `.env`:**
-- `SITEHOST_1_SSH_KEY_PATH` - SSH private key path
-- `SSH_USER` - SSH username (claude)
-- `SSH_HOST` - SSH host address
-- `CONTAINER_NAME` - Docker container name
+### Server Console Commands
+
+To send commands to the live server console (whitelist, serverconfig, etc.) use tmux + docker attach:
+
+```bash
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "
+tmux new-session -d -s vs 'sudo docker attach --sig-proxy=false $CONTAINER_NAME'
+sleep 2
+tmux send-keys -t vs '/whitelist add PlayerName' Enter
+sleep 2
+tmux capture-pane -t vs -p
+tmux kill-session -t vs
+"
+```
+
+**Notes:**
+- `--sig-proxy=false` ensures killing the tmux session won't stop the container
+- Works for any server command: `/whitelist add/remove`, `/serverconfig`, `/op`, etc.
+- Whitelist entries stored in `$SERVER_DATA_PATH/Playerdata/playerswhitelisted.json`
 
 ### Server Directory Structure
 
 **On `$SERVER_IP`** (Coolify managed):
 ```
-$SERVER_DATA_PATH/
-├── docker-compose.yaml      # Pulled from GitHub, updated by Coolify
-├── .env
-├── README.md
-└── data/                    # Mounted volume (Vintage Story server data)
-    ├── Saves/              # World save files
-    ├── Mods/               # Installed mod .zip files (auto-downloaded)
-    ├── ModConfig/          # Mod configurations
-    ├── ModData/            # Mod runtime data
-    ├── Playerdata/         # Player inventory/data
-    ├── Logs/               # Server logs
-    ├── Backups/            # Manual backups
-    ├── Cache/              # Cached mod unpacking
-    ├── serverconfig.json   # Server settings
-    └── servermagicnumbers.json # Game balance config
+$SERVER_DATA_PATH/               # = /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data
+├── Saves/                       # World save files
+├── Mods/                        # Installed mod .zip files (auto-downloaded)
+├── ModConfig/                   # Mod configurations
+├── ModData/                     # Mod runtime data
+├── Playerdata/                  # Player inventory/data
+├── Logs/                        # Server logs
+├── Backups/                     # Backup archives
+├── BackupSaves/                 # Secondary backup location
+├── Cache/                       # Cached mod unpacking
+├── WorldEdit/                   # WorldEdit data
+├── Macros/                      # Server macros
+├── serverconfig.json            # Server settings (world gen, roles, startup commands)
+├── servermagicnumbers.json      # Game balance config
+└── error-summary.log            # Filtered error log (updated every 1 min)
 ```
 
-**All paths defined in `.env` as:**
-- `SERVER_IP` - Server IP address
-- `SERVER_DATA_PATH` - Full path to server data directory
-- `COOLIFY_APP_ID` - Coolify application ID
+**Note**: `SERVER_DATA_PATH` points directly to the game data root — there is no nested `data/` subfolder. All SSH paths use `$SERVER_DATA_PATH/Saves`, `$SERVER_DATA_PATH/Logs`, etc.
 
 **Key files**:
-- `serverconfig.json` - Server configuration (restart needed for changes)
+- `serverconfig.json` - Server configuration (restart needed for changes); edit via `python3` + `sudo cp` pattern (see below)
 - `servermagicnumbers.json` - Game balance settings
-- Mods auto-downloaded to `/data/Mods` on startup
+- Mods auto-downloaded to `$SERVER_DATA_PATH/Mods` on startup
 
 ### Mods & Version Management
 
@@ -239,18 +254,64 @@ $SERVER_DATA_PATH/
 
 ### World Creation
 
-To create a **fresh world**:
-1. **Stop the server**: `docker stop vintage-story-kjbe9vn1omxtdnjzyiopjlrs`
-2. **Delete data folder**: `sudo rm -rf /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data`
-3. **Restore permissions** (gameserver user UID 1000): 
-   ```bash
-   sudo mkdir -p /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data
-   sudo chown 1000:1000 /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data
-   sudo chmod 755 /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data
-   ```
-4. **Restart**: `docker start vintage-story-kjbe9vn1omxtdnjzyiopjlrs`
+**Fresh world keeping mods** (preferred — faster, no redeploy needed):
+```bash
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "
+sudo docker stop $CONTAINER_NAME
+sudo rm -rf $SERVER_DATA_PATH/Saves $SERVER_DATA_PATH/Playerdata $SERVER_DATA_PATH/ModData $SERVER_DATA_PATH/Cache
+sudo docker start $CONTAINER_NAME
+"
+```
+Preserves the already-downloaded Mods folder so startup is fast. Also delete `$SERVER_DATA_PATH/ModConfig/TerraPrety.json` if resetting world gen config.
 
-**Note**: Data folder must be owned by UID 1000 (gameserver user inside container) so it can download mods and create world files
+**Full data wipe** (only if also clearing mods — redeploy required):
+```bash
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "
+sudo docker stop $CONTAINER_NAME
+sudo rm -rf $SERVER_DATA_PATH
+sudo mkdir -p $SERVER_DATA_PATH
+sudo chown 1000:1000 $SERVER_DATA_PATH
+sudo chmod 755 $SERVER_DATA_PATH
+"
+```
+Then trigger a Coolify redeploy so the container re-downloads mods on startup.
+
+**Note**: Data folder must be owned by UID 1000 (gameserver user inside container) so it can write world files.
+
+### World Generation Settings
+
+Current world is configured with Terra Prety recommended settings (set in `serverconfig.json`):
+
+| Setting | Value | Where |
+|---------|-------|-------|
+| `MapSizeY` | `384` | root + `WorldConfig.MapSizeY` |
+| `landformScale` | `3.0` (300%) | `WorldConfig.WorldConfiguration` |
+| `playerMoveSpeed` | `1.5` (slightly faster) | `WorldConfig.WorldConfiguration` |
+| `noLiquidSourceTransport` | `true` | `StartupCommands` (runs `/worldconfig` on startup) |
+
+**Important**: `WorldConfig.WorldConfiguration` settings only apply at world creation. To change them on an existing world, use `/worldconfig <key> <value>` via the server console. `StartupCommands` re-applies settings on every startup.
+
+### Editing serverconfig.json
+
+The file is owned by `will` on the host. The `claude` user can read it but not write directly. Use this pattern:
+
+```bash
+# 1. Modify as claude (no sudo needed for python3)
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "python3 -c \"
+import json
+path = '$SERVER_DATA_PATH/serverconfig.json'
+with open(path) as f: config = json.load(f)
+# ... make changes ...
+with open('/home/claude/serverconfig_new.json', 'w') as f: json.dump(config, f, indent=2)
+\""
+
+# 2. Copy into place (sudo cp is allowed)
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 \
+  "sudo cp /home/claude/serverconfig_new.json $SERVER_DATA_PATH/serverconfig.json"
+```
+
+**Claude's sudo allowlist** (NOPASSWD): `docker`, `rm`, `chmod`, `chown`, `mkdir`, `tar`, `cp`, `wget`, `cat`, `ls`  
+`python3`, `tee`, and other commands require a password — use the python3 + sudo cp pattern above.
 
 ### Server Log Monitoring
 
@@ -281,38 +342,67 @@ ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SSH_HOST \
 
 For automated/scheduled monitoring, use the `server-log-monitor` skill instead.
 
+### Cron Jobs (Container-Internal)
+
+Scheduled tasks run inside the container as the `gameserver` user. The crontab is installed by `entrypoint.sh` at startup from `scripts/crontab`.
+
+| Schedule | Script | Purpose |
+|----------|--------|---------|
+| 3am daily (NZST) | `backup.sh` | Tar Saves dir with timestamp, keep last 7 |
+| 4am daily (NZST) | `log-rotate.sh` | Gzip logs >1 day old, delete compressed >14 days |
+
+To check cron is running inside the container:
+```bash
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 \
+  "sudo docker exec $CONTAINER_NAME pgrep cron && echo 'cron running'"
+```
+
+To manually trigger a backup:
+```bash
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 \
+  "sudo docker exec $CONTAINER_NAME /srv/gameserver/vintagestory/backup.sh"
+```
+
 ### Backups
 
-Backups can be created manually via SSH:
+Automated backups run daily at 3am (Pacific/Auckland) via the container-internal cron job (`scripts/backup.sh`). Keeps last 7 backups. Logs to `$SERVER_DATA_PATH/Backups/backup.log`.
+
+Manual backup via SSH:
 ```bash
-ssh -i ~/.ssh/sitehost1 root@sitehost-1.willscookbook.nz \
-  "tar -czf /srv/gameserver/data/vs/Backups/backup-$(date +%s).tar.gz /srv/gameserver/data/vs/Saves"
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 \
+  "sudo docker exec $CONTAINER_NAME /srv/gameserver/vintagestory/backup.sh"
 ```
 
 ## Repository Structure
 
 ```
 vintage-story-server/
-├── compose.yaml          # Docker Compose - VERSION and MODS config
-├── Dockerfile            # Multi-stage build: .NET 8/10, downloads and runs scripts
-├── README.md             # User-facing documentation
-├── CLAUDE.md             # This file - Claude's management guide
-├── .env                  # Credentials (gitignored)
+├── compose.yaml                # Docker Compose - VERSION and MODS config
+├── Dockerfile                  # Multi-stage build: .NET 8/10, downloads and runs scripts
+├── README.md                   # User-facing documentation
+├── CLAUDE.md                   # This file - Claude's management guide
+├── download-client-mods.py     # Script: downloads client-required mods to client-mods/
+├── .env                        # Credentials (gitignored)
 │   ├── SITEHOST_UI_API_KEY        # Coolify API token
 │   └── SITEHOST_1_SSH_KEY_PATH    # SSH key path for server access
-├── scripts/              # Container entry point scripts
+├── client-mods/                # Client mod zips (gitignored *.zip, tracked via .gitkeep)
+├── scripts/                    # Container entry point scripts
+│   ├── entrypoint.sh               # Root entrypoint: starts cron daemon, su's to gameserver
+│   ├── check_and_start.sh          # Version check, mod download (releases[0]), server startup
 │   ├── download_server.sh          # Downloads Vintage Story binary
-│   └── check_and_start.sh          # Version check, mod download, server startup
-├── skills/               # Skill documentation
+│   ├── backup.sh                   # Timestamped Saves backup, keeps last 7
+│   ├── log-rotate.sh               # Gzip old logs, purge >14 days
+│   └── crontab                     # Cron schedule (3am backup, 4am log rotation)
+├── skills/                     # Skill documentation
 │   ├── vintage-story-manage.md     # Server management operations
 │   ├── vintage-story-repo.md       # Repository maintenance
 │   └── vintage-story-network.md    # Network/tunnel monitoring (playit.gg)
-├── .github/              # GitHub Actions workflows
-└── data/                 # Server data volume (gitignored)
-    ├── Saves/            # Game world saves
-    ├── Mods/             # Installed mods (auto-downloaded)
-    ├── Logs/             # Server logs
-    └── Backups/          # Manual backups
+├── .github/                    # GitHub Actions workflows
+└── data/                       # Server data volume (gitignored)
+    ├── Saves/                  # Game world saves
+    ├── Mods/                   # Installed mods (auto-downloaded)
+    ├── Logs/                   # Server logs
+    └── Backups/                # Manual backups
 ```
 
 ### How It Works
@@ -321,12 +411,16 @@ vintage-story-server/
 2. **Commit to GitHub** → QuickWaller/vintage-story-server fork
 3. **Coolify detects push** → Rebuilds Docker image
 4. **Docker build** → Copies scripts, sets up .NET runtimes
-5. **Container starts** → `check_and_start.sh` runs:
+5. **Container starts** → `entrypoint.sh` runs as root:
+   - Installs gameserver's crontab (`backup.sh` at 3am, `log-rotate.sh` at 4am)
+   - Starts cron daemon
+   - `su`s to gameserver and runs `check_and_start.sh`
+6. **`check_and_start.sh` runs:**
    - Checks if VERSION changed, downloads server binary if needed
    - Downloads each mod from mods.vintagestory.at API
    - Starts Vintage Story server with `/srv/gameserver/data/vs` data path
-6. **playit.gg tunnel** → Connects clients to server (port 42420)
-7. **Players connect** → Via playit.gg tunnel to sitehost-1.willscookbook.nz
+7. **playit.gg tunnel** → Connects clients to server (port 42420)
+8. **Players connect** → Via playit.gg tunnel to sitehost-1.willscookbook.nz
 
 ### Maintenance Workflow
 
@@ -364,7 +458,7 @@ Claude can:
 - Update documentation
 
 ### Credentials
-- SSH: `~/.ssh/sitehost1`
+- SSH: `$SITEHOST_1_SSH_KEY_PATH` from `.env` (resolves to `~/.ssh/sitehost1`)
 - Coolify API: `SITEHOST_UI_API_KEY` in `.env`
 
 ## Common Tasks & Examples
@@ -417,26 +511,29 @@ Claude can:
 
 ### Complete ✅
 - **Coolify API** - Authenticated and operational
-- **SSH Access** - Via Tailscale using `claude` user with SSH key auth (passwordless)
-- **Playit.gg Integration** - Secret key configured and ready (integrating into compose tomorrow)
+- **SSH Access** - Via Tailscale to 192.168.2.151 using `claude` user with SSH key auth (passwordless, sudo for docker)
+- **Playit.gg Integration** - Agent running, tunnel active on port 42420
 - **HTTPS/TLS** - Wildcard certificates installed on both VMs
 - **Three Management Skills** - vintage-story-manage, vintage-story-repo, vintage-story-network all functional
 - **Git Repository** - QuickWaller/vintage-story-server fork deployed via Coolify
 - **Environment Configuration** - All user-specific config moved to `.env` (never published)
 - **Documentation** - README, CLAUDE.md, and skills docs comprehensive and current
-- **Server** - Running 1.22.2 (latest stable) with fresh world, 40+ mods
+- **Server** - Running 1.22.2 (latest stable) with fresh world (Terra Prety, 57 mods)
+- **Container Cron Jobs** - Daily backups (3am) and log rotation (4am) running inside container
+- **Startup errors resolved** - Clean startup on 1.22.2 with current mod set
+- **World gen configured** - MapSizeY 384, landformScale 3.0, playerMoveSpeed 1.5, noLiquidSourceTransport
+- **Client mods script** - `download-client-mods.py` downloads all client-required mod zips locally
 
 ### Infrastructure
 - Cloudflare tunnels: sitehost-ui.willscookbook.nz (Coolify), cloudflared agent (playit.gg)
 - Tailscale VPN: Connects across VLAN boundaries for secure access
 - Deployments: GitHub → Coolify (auto-rebuild on push)
 - Mods: Auto-downloaded from mods.vintagestory.at on container startup
-- Error monitoring: filter-errors.sh runs every 1 minute on server
+- Cron: backup.sh + log-rotate.sh run daily inside container via entrypoint.sh
 
-### Tomorrow's Priorities
-1. Eliminate all server startup errors
-2. Integrate playit.gg into docker-compose for standalone deployment
-3. Set up automated cron jobs (daily backups, log rotation, weekly stats)
+### Known Issues / Pending Fixes
+1. **OGG client crash** — `antiqueharmony` and `antiqueensemble` cause `OutOfMemoryException` in OGG decoder; remove both mods when ready
+2. **UDP tunnel** — playit.gg tunnel appears TCP-only; VS falls back to TCP for position updates causing slow loading; investigate enabling UDP on the tunnel
 
 ## Working Relationship
 
@@ -483,6 +580,32 @@ Claude can:
 - Mods must match your `VERSION` setting
 - Check the mod's "Files" table for version requirements
 - Incompatible mods will cause server startup failures
+
+### Client Mods
+
+VS does **not** auto-distribute mods to clients. Players must install mods manually.
+
+- **Both-sided mods** — required on client to connect (crash on join if missing)
+- **Client-only mods** — optional, install for visual/UI improvements
+
+**To download all client-required mods locally:**
+```bash
+python download-client-mods.py
+```
+Downloads non-server-only mods from the MODS list into `client-mods/` (uses `releases[0]`, same as the server). Safe to re-run — skips already-present zips. Copy the zips into your VS `Mods` folder.
+
+**Whitelisting players:**
+```bash
+# Via tmux + docker attach
+ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "
+tmux new-session -d -s vs 'sudo docker attach --sig-proxy=false $CONTAINER_NAME'
+sleep 2
+tmux send-keys -t vs '/whitelist add PlayerName' Enter
+sleep 2
+tmux capture-pane -t vs -p
+tmux kill-session -t vs
+"
+```
 
 ### Documentation
 - This CLAUDE.md is the source of truth for my responsibilities and operations
