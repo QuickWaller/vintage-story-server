@@ -56,7 +56,7 @@ environment:
 ```
 
 **Current mod list** (from `compose.yaml`):
-betterruins, watersheds, egocaribautomapmarkers, bloodtrail, medievalarchitecture, falandsknecht, fagothic, fahussar, deathcorpses, favarangian, fadynasties, plushiemodpack, healingsprings, offlinefoodnospoil, forestregenmod, tungsten, undergroundmines, vanillapluspatch, easybuilding, attributerenderinglibrary, ggbcsrepair, lostandfound, buzzwords, aldiclasses, stepupadvanced, charlottesclothes, xskillsgilded, vsimgui, xlibfork, xskillsfork, vsvillage, em, firewoodtosticks, hardcorewaterevolved, vsextbedrespawn, antiqueharmony, antiqueensemble, realsmoke, opineuponpine, ndltreehollows
+betterruins, watersheds, mwi, altmapiconrenderercontinued, bloodtrail, medievalarchitecture, falandsknecht, fagothic, fahussar, deathcorpses, favarangian, fadynasties, fajousting, faviking, fatemplar, fagreenwich, bettertraders, healingsprings, offlinefoodnospoil, forestregenmod, tungsten, undergroundmines, terraprety, easybuilding, attributerenderinglibrary, ggbcsrepair, lostandfound, buzzwords, aldiclasses, stepupadvanced, charlottesclothes, xskillsgilded, vsimgui, xlibfork, xskillsfork, em, firewoodtosticks, hardcorewaterevolved, vsextbedrespawn, antiqueharmony, antiqueensemble, realsmoke, opineuponpine, ndltreehollows, canjewelry, roomtools, butchering, automaticforging, spinningwheel, knitting, fishingplus, simpleinfohud, valksfuzzyclouds, curefirewood, rlmoonsun, cartwrightscaravan, nomadtents
 
 See https://mods.vintagestory.at for the full mod catalog and version compatibility.
 
@@ -147,12 +147,22 @@ docker exec vintage-story-kjbe9vn1omxtdnjzyiopjlrs \
 
 ### Fresh World
 
-To reset and create a fresh world with new mods:
+To reset and create a fresh world (keeps downloaded mods):
 ```bash
 docker stop vintage-story-kjbe9vn1omxtdnjzyiopjlrs
-rm -rf data/Saves data/Mods data/Cache
+rm -rf data/Saves data/Playerdata data/ModData data/Cache
 docker start vintage-story-kjbe9vn1omxtdnjzyiopjlrs
 ```
+
+### Client Mods
+
+Vintage Story does not auto-distribute mods to clients — players must install them manually. To download all client-required mod zips locally (for sharing or personal use):
+
+```bash
+python download-client-mods.py
+```
+
+This reads the `MODS` list from `compose.yaml`, queries the mod API, and downloads all non-server-only mods into `client-mods/`. Safe to re-run; already-present zips are skipped.
 
 ### Adding/Removing Mods
 
