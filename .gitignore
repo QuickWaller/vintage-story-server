@@ -16,3 +16,5 @@ production
 *.code-workspace
 
 .env
+
+client-mods/*.zip
