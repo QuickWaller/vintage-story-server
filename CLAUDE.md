@@ -41,7 +41,7 @@ All user-specific configuration is in `.env`. **Never commit `.env` to git** —
 
 **Game Server:**
 - `TZ` - Server timezone (Pacific/Auckland)
-- `VERSION` - Game version (1.22.2)
+- `VERSION` - Game version (1.22.5)
 
 **Networking:**
 - `PLAYIT_AGENT_ID` - playit.gg agent identifier
@@ -246,7 +246,7 @@ $SERVER_DATA_PATH/               # = /data/coolify/applications/kjbe9vn1omxtdnjz
 **Current mods**: See `compose.yaml` MODS environment variable (comma-separated IDs)
 
 **Version & configuration in `.env`:**
-- `VERSION=1.22.2` - Game version to run
+- `VERSION=1.22.5` - Game version to run
 - `TZ=Pacific/Auckland` - Server timezone
 - Can override in compose.yaml if needed
 
@@ -518,9 +518,9 @@ Claude can:
 - **Git Repository** - QuickWaller/vintage-story-server fork deployed via Coolify
 - **Environment Configuration** - All user-specific config moved to `.env` (never published)
 - **Documentation** - README, CLAUDE.md, and skills docs comprehensive and current
-- **Server** - Running 1.22.2 (latest stable) with fresh world (Terra Prety, 57 mods)
+- **Server** - Running 1.22.5 (latest stable) with fresh world (Terra Prety, 58 mods)
 - **Container Cron Jobs** - Daily backups (3am) and log rotation (4am) running inside container
-- **Startup errors resolved** - Clean startup on 1.22.2 with current mod set
+- **Startup errors resolved** - Clean startup on 1.22.5; only cosmetic issues remain (see Known Issues)
 - **World gen configured** - MapSizeY 384, landformScale 3.0, playerMoveSpeed 1.5, noLiquidSourceTransport
 - **Client mods script** - `download-client-mods.py` downloads all client-required mod zips locally
 
@@ -532,8 +532,14 @@ Claude can:
 - Cron: backup.sh + log-rotate.sh run daily inside container via entrypoint.sh
 
 ### Known Issues / Pending Fixes
-1. **OGG client crash** — `antiqueharmony` and `antiqueensemble` cause `OutOfMemoryException` in OGG decoder; remove both mods when ready
-2. **UDP tunnel** — playit.gg tunnel appears TCP-only; VS falls back to TCP for position updates causing slow loading; investigate enabling UDP on the tunnel
+1. **UDP tunnel** — playit.gg tunnel appears TCP-only; VS falls back to TCP for position updates causing slow loading; investigate enabling UDP on the tunnel
+2. **canjewelry self-reference bug** — `cangemchisel-silver`/`cangemchisel-gold` grid recipes reference their own output as an ingredient (upstream mod bug); 2 harmless "cannot be resolved" errors on every startup
+3. **vsvillage vanilla patch error** — `animal-flee-villagers.json` patch fails to find `entityCodes` on the vanilla sheep-adult entity; base-game issue, unrelated to installed mods, does not affect gameplay
+
+**Resolved:**
+- ~~OGG client crash~~ — `antiqueharmony`/`antiqueensemble` removed (caused `OutOfMemoryException`)
+- ~~carryon dependency error~~ — mod removed from `MODS` list, but stale `.zip` files were left behind in the persistent `Mods/` folder and kept loading anyway (VS loads every zip in `Mods/`, not just ones in the env var). Had to manually `rm` them via SSH. **Lesson: removing a mod from `compose.yaml` does not remove it from disk — delete the corresponding zip(s) from `$SERVER_DATA_PATH/Mods` too.**
+- ~~charlottesclothes missing ~45 recipes~~ — added `tailorsdelight` dependency mod
 
 ## Working Relationship
 

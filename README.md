@@ -10,10 +10,10 @@
 ## Features
 
 **Server Management:**
-- [x] Easy version configuration (currently 1.22.2)
+- [x] Easy version configuration (currently 1.22.5)
 - [x] Support for both stable and unstable (RC) versions
 - [x] Automatic mod downloading and installation from mods.vintagestory.at
-- [x] Pre-configured mod list (40+ mods)
+- [x] Pre-configured mod list (58 mods)
 - [x] Health checks and container monitoring
 
 **Data & Configuration:**
@@ -51,7 +51,7 @@ Edit the `compose.yaml` environment variables:
 ```yaml
 environment:
   - TZ=Pacific/Auckland              # Your timezone
-  - VERSION=1.22.2                   # Game version
+  - VERSION=1.22.5                   # Game version
   - MODS=betterruins,watersheds,...  # Comma-separated mod IDs
 ```
 
@@ -186,7 +186,7 @@ This fork is configured for automated Coolify deployment:
 ### Coolify Configuration
 
 Set environment variables in Coolify dashboard:
-- `VERSION` - Game version (e.g., `1.22.2`)
+- `VERSION` - Game version (e.g., `1.22.5`)
 - `TZ` - Server timezone (e.g., `Pacific/Auckland`)
 - `MODS` - Comma-separated mod list
 
