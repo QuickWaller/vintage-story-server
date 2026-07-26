@@ -14,8 +14,8 @@ services:
       - ./data:/srv/gameserver/data/vs
     environment:
       - TZ=Pacific/Auckland  # Set to your timezone
-      - VERSION=1.22.4  # Game version - works with release candidates (unstable) as well as regular releases (stable)
-      - MODS=betterruins,watersheds,mwi,altmapiconrenderercontinued,bloodtrail,medievalarchitecture,falandsknecht,fagothic,fahussar,deathcorpses,favarangian,fadynasties,fajousting,faviking,fatemplar,fagreenwich,bettertraders,healingsprings,offlinefoodnospoil,forestregenmod,tungsten,undergroundmines,terraprety,easybuilding,attributerenderinglibrary,ggbcsrepair,lostandfound,buzzwords,aldiclasses,stepupadvanced,charlottesclothes,xskillsgilded,vsimgui,xlibfork,xskillsfork,em,firewoodtosticks,hardcorewaterevolved,vsextbedrespawn,realsmoke,opineuponpine,canjewelry,roomtools,butchering,automaticforging,spinningwheel,knitting,simpleinfohud,valksfuzzyclouds,curefirewood,rlmoonsun,cartwrightscaravan,nomadcookbook,fromgoldencombs,trailmodmaro,tentbagreworked122plus,comfybeds,vsroofing,chiseltools,primitivesurvival
+      - VERSION=1.22.5  # Game version - works with release candidates (unstable) as well as regular releases (stable)
+      - MODS=betterruins,watersheds,mwi,altmapiconrenderercontinued,bloodtrail,medievalarchitecture,falandsknecht,fagothic,fahussar,deathcorpses,favarangian,fadynasties,fajousting,faviking,fatemplar,fagreenwich,bettertraders,healingsprings,offlinefoodnospoil,forestregenmod,tungsten,undergroundmines,terraprety,easybuilding,attributerenderinglibrary,ggbcsrepair,lostandfound,buzzwords,aldiclasses,stepupadvanced,charlottesclothes,tailorsdelight,xskillsgilded,vsimgui,xlibfork,xskillsfork,em,firewoodtosticks,hardcorewaterevolved,vsextbedrespawn,realsmoke,opineuponpine,canjewelry,roomtools,butchering,automaticforging,spinningwheel,knitting,simpleinfohud,valksfuzzyclouds,curefirewood,rlmoonsun,cartwrightscaravan,nomadcookbook,fromgoldencombs,trailmodmaro,tentbagreworked122plus,comfybeds,vsroofing,chiseltools,primitivesurvival
     stdin_open: true
     tty: true
     healthcheck:
