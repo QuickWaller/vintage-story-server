@@ -205,6 +205,8 @@ tmux kill-session -t vs
 - `--sig-proxy=false` ensures killing the tmux session won't stop the container
 - Works for any server command: `/whitelist add/remove`, `/serverconfig`, `/op`, etc.
 - Whitelist entries stored in `$SERVER_DATA_PATH/Playerdata/playerswhitelisted.json`
+- **`/whitelist add` alone does not restrict access.** Enforcement requires `"OnlyWhitelisted": true` in `serverconfig.json` (confirmed `false` as of 2026-07-26 — anyone can currently join regardless of whitelist entries). Edit via the python3 + `sudo cp` pattern below if enforcement is wanted.
+- `Playerdata/` (and therefore the whitelist file) is deleted by the "Fresh world" world-reset procedure below — re-add whitelist entries after any world reset.
 
 ### Server Directory Structure
 
@@ -518,7 +520,7 @@ Claude can:
 - **Git Repository** - QuickWaller/vintage-story-server fork deployed via Coolify
 - **Environment Configuration** - All user-specific config moved to `.env` (never published)
 - **Documentation** - README, CLAUDE.md, and skills docs comprehensive and current
-- **Server** - Running 1.22.5 (latest stable) with fresh world (Terra Prety, 58 mods)
+- **Server** - Running 1.22.5 (latest stable) with fresh world reset on 2026-07-26 (Terra Prety, 58 mods)
 - **Container Cron Jobs** - Daily backups (3am) and log rotation (4am) running inside container
 - **Startup errors resolved** - Clean startup on 1.22.5; only cosmetic issues remain (see Known Issues)
 - **World gen configured** - MapSizeY 384, landformScale 3.0, playerMoveSpeed 1.5, noLiquidSourceTransport
@@ -535,6 +537,8 @@ Claude can:
 1. **UDP tunnel** — playit.gg tunnel appears TCP-only; VS falls back to TCP for position updates causing slow loading; investigate enabling UDP on the tunnel
 2. **canjewelry self-reference bug** — `cangemchisel-silver`/`cangemchisel-gold` grid recipes reference their own output as an ingredient (upstream mod bug); 2 harmless "cannot be resolved" errors on every startup
 3. **vsvillage vanilla patch error** — `animal-flee-villagers.json` patch fails to find `entityCodes` on the vanilla sheep-adult entity; base-game issue, unrelated to installed mods, does not affect gameplay
+4. **Whitelist not enforced** — `"OnlyWhitelisted": false` in `serverconfig.json` as of 2026-07-26; `/whitelist add` entries have no actual access-control effect until this is flipped to `true`
+5. **Unexplained container restart** — container received SIGTERM and restarted once (2026-07-26 20:38, ~25 min after the world reset) with no restart command issued from this session; briefly disconnected 2 connected players but did not affect world data (RestartCount stayed 0, so not a crash-loop/OOM restart policy trigger — cause undetermined, possibly Coolify sentinel or manual UI action)
 
 **Resolved:**
 - ~~OGG client crash~~ — `antiqueharmony`/`antiqueensemble` removed (caused `OutOfMemoryException`)
