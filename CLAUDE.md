@@ -33,9 +33,10 @@ All user-specific configuration is in `.env`. **Never commit `.env` to git** —
 - `SITEHOST_UI_API_KEY` - Coolify API authentication token
 - `COOLIFY_API_BASE` - Coolify API base URL
 - `SITEHOST_1_SSH_KEY_PATH` - Path to SSH private key
-- `SERVER_IP` - Server IP address (192.168.2.151)
-- `SSH_USER` - SSH username (claude)
-- `SSH_HOST` - SSH hostname (sitehost-1.willscookbook.nz)
+- `SERVER_IP` - Server IP address
+- `SSH_USER` - SSH username
+- `SSH_HOST` - SSH hostname
+- `COOLIFY_UI_HOST` - Coolify management UI hostname
 - `COOLIFY_APP_ID` - Coolify application identifier
 - `SERVER_DATA_PATH` - Full path to server data directory
 
@@ -66,7 +67,7 @@ Manage the Vintage Story server via SSH and Coolify API
 - **Server status**: Check container status and health
 - **Logs**: View real-time server logs and troubleshoot issues
 - **Restart**: Restart the container (triggers mod re-download)
-- **SSH access**: Direct shell access via Tailscale (192.168.2.151)
+- **SSH access**: Direct shell access via Tailscale ($SERVER_IP)
 - **Mods**: List installed mods, identify version compatibility
 - **Backups**: Create timestamped backups of saves
 
@@ -113,17 +114,17 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
 - **Agent**: Running in Docker container (playit-ok1p0160sc31ifys5zp6pa1z)
 - **Secret Key**: `PLAYIT_SECRET_KEY` in `.env` — used by agent for backend authentication
 - **API**: No public REST API. Agent uses internal Rust client library for all tunnel/backend operations
-- **Tunnel**: Configured to route clients to sitehost-1.willscookbook.nz on port 42420
+- **Tunnel**: Configured to route clients to $SSH_HOST on port 42420
 - **Status**: ✅ Active and accepting player connections
 - **Management**: Tunnel configuration managed through agent, not via public API
 
 ### Network Setup
-- **Server**: 192.168.2.151 on internal VLAN (Proxmox host)
+- **Server**: $SERVER_IP on internal VLAN (Proxmox host)
 - **Client tunnel**: playit.gg handles Vintage Story client connections
-- **Management SSH**: Via Tailscale to 192.168.2.151 (user: claude)
-- **Coolify UI**: https://sitehost-ui.willscookbook.nz (cloudflared tunnel, HTTPS with wildcard certs)
+- **Management SSH**: Via Tailscale to $SERVER_IP (user: $SSH_USER)
+- **Coolify UI**: https://$COOLIFY_UI_HOST (cloudflared tunnel, HTTPS with wildcard certs)
 - **VPN**: Tailscale provides secure network access across VLANs
-- **Certificates**: Wildcard SSL for *.willscookbook.nz installed on both VMs
+- **Certificates**: Wildcard SSL for the server's base domain, installed on both VMs
 
 ## Architecture & Access
 
@@ -132,14 +133,14 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
    - Upstream: https://github.com/quartzar/vintage-story-server (original)
    - Deployed via GitHub App integration
    
-2. **Coolify Management**: https://sitehost-ui.willscookbook.nz
+2. **Coolify Management**: https://$COOLIFY_UI_HOST
    - REST API for deployments, status, and application management
    - API Token: `SITEHOST_UI_API_KEY` (read, write, deploy access)
    - Documentation: https://coolify.io/docs/api-reference/api/
    - Can trigger deployments by UUID or tag
 
-3. **Server Runtime**: 192.168.2.151:42420
-   - SSH access: `claude@192.168.2.151` (via Tailscale, requires `sudo` for docker commands)
+3. **Server Runtime**: $SERVER_IP:42420
+   - SSH access: `$SSH_USER@$SERVER_IP` (via Tailscale, requires `sudo` for docker commands)
    - SSH Key: `$SITEHOST_1_SSH_KEY_PATH` from `.env`
    - Container: Docker Compose with Vintage Story server
 
@@ -154,10 +155,10 @@ Monitor and manage the client tunnel infrastructure (playit.gg)
 
 ### SSH Access Pattern
 
-**Always use `SERVER_IP` (192.168.2.151) directly** — `SSH_HOST` (`sitehost-1.willscookbook.nz`) is unreachable. The `claude` user requires `sudo` for all docker commands.
+**Always use `SERVER_IP` ($SERVER_IP) directly** — `SSH_HOST` (`$SSH_HOST`) is unreachable. The `claude` user requires `sudo` for all docker commands.
 
 ```bash
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker ps"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "sudo docker ps"
 ```
 
 ### Container Operations via SSH
@@ -165,25 +166,25 @@ ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker ps"
 **Status & Logs**
 ```bash
 # Check container status
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker ps | grep $CONTAINER_NAME"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "sudo docker ps | grep $CONTAINER_NAME"
 
 # View logs (last 50 lines)
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker logs $CONTAINER_NAME --tail 50"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "sudo docker logs $CONTAINER_NAME --tail 50"
 
 # View startup errors only
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker logs $CONTAINER_NAME 2>&1 | grep '\[Server Error\]'"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "sudo docker logs $CONTAINER_NAME 2>&1 | grep '\[Server Error\]'"
 ```
 
 **Container Control**
 ```bash
 # Stop server
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker stop $CONTAINER_NAME"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "sudo docker stop $CONTAINER_NAME"
 
 # Start server
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker start $CONTAINER_NAME"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "sudo docker start $CONTAINER_NAME"
 
 # Restart server
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker restart $CONTAINER_NAME"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "sudo docker restart $CONTAINER_NAME"
 ```
 
 ### Server Console Commands
@@ -191,7 +192,7 @@ ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "sudo docker restart $CONTAINER_NAM
 To send commands to the live server console (whitelist, serverconfig, etc.) use tmux + docker attach:
 
 ```bash
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "
 tmux new-session -d -s vs 'sudo docker attach --sig-proxy=false $CONTAINER_NAME'
 sleep 2
 tmux send-keys -t vs '/whitelist add PlayerName' Enter
@@ -212,7 +213,7 @@ tmux kill-session -t vs
 
 **On `$SERVER_IP`** (Coolify managed):
 ```
-$SERVER_DATA_PATH/               # = /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data
+$SERVER_DATA_PATH/               # = /data/coolify/applications/$COOLIFY_APP_ID/data
 ├── Saves/                       # World save files
 ├── Mods/                        # Installed mod .zip files (auto-downloaded)
 ├── ModConfig/                   # Mod configurations
@@ -258,7 +259,7 @@ $SERVER_DATA_PATH/               # = /data/coolify/applications/kjbe9vn1omxtdnjz
 
 **Fresh world keeping mods** (preferred — faster, no redeploy needed):
 ```bash
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "
 sudo docker stop $CONTAINER_NAME
 sudo rm -rf $SERVER_DATA_PATH/Saves $SERVER_DATA_PATH/Playerdata $SERVER_DATA_PATH/ModData $SERVER_DATA_PATH/Cache
 sudo docker start $CONTAINER_NAME
@@ -268,7 +269,7 @@ Preserves the already-downloaded Mods folder so startup is fast. Also delete `$S
 
 **Full data wipe** (only if also clearing mods — redeploy required):
 ```bash
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "
 sudo docker stop $CONTAINER_NAME
 sudo rm -rf $SERVER_DATA_PATH
 sudo mkdir -p $SERVER_DATA_PATH
@@ -299,7 +300,7 @@ The file is owned by `will` on the host. The `claude` user can read it but not w
 
 ```bash
 # 1. Modify as claude (no sudo needed for python3)
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "python3 -c \"
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "python3 -c \"
 import json
 path = '$SERVER_DATA_PATH/serverconfig.json'
 with open(path) as f: config = json.load(f)
@@ -308,7 +309,7 @@ with open('/home/claude/serverconfig_new.json', 'w') as f: json.dump(config, f, 
 \""
 
 # 2. Copy into place (sudo cp is allowed)
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 \
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP \
   "sudo cp /home/claude/serverconfig_new.json $SERVER_DATA_PATH/serverconfig.json"
 ```
 
@@ -355,13 +356,13 @@ Scheduled tasks run inside the container as the `gameserver` user. The crontab i
 
 To check cron is running inside the container:
 ```bash
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 \
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP \
   "sudo docker exec $CONTAINER_NAME pgrep cron && echo 'cron running'"
 ```
 
 To manually trigger a backup:
 ```bash
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 \
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP \
   "sudo docker exec $CONTAINER_NAME /srv/gameserver/vintagestory/backup.sh"
 ```
 
@@ -371,7 +372,7 @@ Automated backups run daily at 3am (Pacific/Auckland) via the container-internal
 
 Manual backup via SSH:
 ```bash
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 \
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP \
   "sudo docker exec $CONTAINER_NAME /srv/gameserver/vintagestory/backup.sh"
 ```
 
@@ -422,7 +423,7 @@ vintage-story-server/
    - Downloads each mod from mods.vintagestory.at API
    - Starts Vintage Story server with `/srv/gameserver/data/vs` data path
 7. **playit.gg tunnel** → Connects clients to server (port 42420)
-8. **Players connect** → Via playit.gg tunnel to sitehost-1.willscookbook.nz
+8. **Players connect** → Via playit.gg tunnel to $SSH_HOST
 
 ### Maintenance Workflow
 
@@ -460,7 +461,7 @@ Claude can:
 - Update documentation
 
 ### Credentials
-- SSH: `$SITEHOST_1_SSH_KEY_PATH` from `.env` (resolves to `~/.ssh/sitehost1`)
+- SSH: `$SITEHOST_1_SSH_KEY_PATH` from `.env` (resolves to `$SITEHOST_1_SSH_KEY_PATH`)
 - Coolify API: `SITEHOST_UI_API_KEY` in `.env`
 
 ## Common Tasks & Examples
@@ -513,7 +514,7 @@ Claude can:
 
 ### Complete ✅
 - **Coolify API** - Authenticated and operational
-- **SSH Access** - Via Tailscale to 192.168.2.151 using `claude` user with SSH key auth (passwordless, sudo for docker)
+- **SSH Access** - Via Tailscale to $SERVER_IP using `claude` user with SSH key auth (passwordless, sudo for docker)
 - **Playit.gg Integration** - Agent running, tunnel active on port 42420
 - **HTTPS/TLS** - Wildcard certificates installed on both VMs
 - **Three Management Skills** - vintage-story-manage, vintage-story-repo, vintage-story-network all functional
@@ -527,7 +528,7 @@ Claude can:
 - **Client mods script** - `download-client-mods.py` downloads all client-required mod zips locally
 
 ### Infrastructure
-- Cloudflare tunnels: sitehost-ui.willscookbook.nz (Coolify), cloudflared agent (playit.gg)
+- Cloudflare tunnels: $COOLIFY_UI_HOST (Coolify), cloudflared agent (playit.gg)
 - Tailscale VPN: Connects across VLAN boundaries for secure access
 - Deployments: GitHub → Coolify (auto-rebuild on push)
 - Mods: Auto-downloaded from mods.vintagestory.at on container startup
@@ -607,7 +608,7 @@ Downloads non-server-only mods from the MODS list into `client-mods/` (uses `rel
 **Whitelisting players:**
 ```bash
 # Via tmux + docker attach
-ssh -i ~/.ssh/sitehost1 claude@192.168.2.151 "
+ssh -i $SITEHOST_1_SSH_KEY_PATH $SSH_USER@$SERVER_IP "
 tmux new-session -d -s vs 'sudo docker attach --sig-proxy=false $CONTAINER_NAME'
 sleep 2
 tmux send-keys -t vs '/whitelist add PlayerName' Enter

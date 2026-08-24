@@ -23,8 +23,8 @@ Monitor and manage the Vintage Story server's network infrastructure via playit.
 
 ### Deployment
 - **Service**: playit.gg (tunneling infrastructure)
-- **Agent**: Running on 192.168.2.151
-- **Tunnel endpoint**: sitehost-1.willscookbook.nz
+- **Agent**: Running on $SERVER_IP
+- **Tunnel endpoint**: $SSH_HOST
 - **Game port**: 42420 (Vintage Story default)
 - **Connection**: Cloudflared tunnel from server to playit.gg
 

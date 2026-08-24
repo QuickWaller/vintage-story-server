@@ -21,11 +21,11 @@ Monitor Vintage Story server logs for errors and issues after startup or configu
 **Server-side filtering** (pre-processing):
 - `/usr/local/bin/filter-errors.sh` runs every 1 minute via cron
 - Greps both log files for ERROR, CRITICAL, Exception, Failed, crash patterns
-- Outputs filtered summary to `/data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log`
+- Outputs filtered summary to `/data/coolify/applications/$COOLIFY_APP_ID/data/error-summary.log`
 - Includes: full startup sequence (mod loading, initialization), all errors with line numbers, timestamps
 
 **Skill execution**:
-1. **SSH** to 192.168.2.151 and reads the pre-filtered error-summary.log
+1. **SSH** to $SERVER_IP and reads the pre-filtered error-summary.log
 2. **Analyzes** for quick interpretation
 3. **Outputs**:
    - ✅ `Server healthy` (no errors)
@@ -47,12 +47,12 @@ Monitor Vintage Story server logs for errors and issues after startup or configu
 
 ```bash
 # Quick health check (reads pre-filtered summary)
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 \
-  "sudo cat /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log | head -50"
+ssh -i $SITEHOST_1_SSH_KEY_PATH will@$SERVER_IP \
+  "sudo cat /data/coolify/applications/$COOLIFY_APP_ID/data/error-summary.log | head -50"
 
 # Force refresh the filter script (instant)
-ssh -i ~/.ssh/sitehost1 will@192.168.2.151 \
-  "sudo /usr/local/bin/filter-errors.sh && cat /data/coolify/applications/kjbe9vn1omxtdnjzyiopjlrs/data/error-summary.log"
+ssh -i $SITEHOST_1_SSH_KEY_PATH will@$SERVER_IP \
+  "sudo /usr/local/bin/filter-errors.sh && cat /data/coolify/applications/$COOLIFY_APP_ID/data/error-summary.log"
 ```
 
 ## Notes

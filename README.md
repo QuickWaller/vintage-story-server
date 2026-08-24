@@ -127,12 +127,12 @@ The `Dockerfile`:
 
 Real-time server logs:
 ```bash
-docker logs -f vintage-story-kjbe9vn1omxtdnjzyiopjlrs
+docker logs -f vintage-story-$COOLIFY_APP_ID
 ```
 
 Filtered error summary:
 ```bash
-docker exec vintage-story-kjbe9vn1omxtdnjzyiopjlrs \
+docker exec vintage-story-$COOLIFY_APP_ID \
   cat /data/error-summary.log | head -50
 ```
 
@@ -140,7 +140,7 @@ docker exec vintage-story-kjbe9vn1omxtdnjzyiopjlrs \
 
 Create a backup before major updates:
 ```bash
-docker exec vintage-story-kjbe9vn1omxtdnjzyiopjlrs \
+docker exec vintage-story-$COOLIFY_APP_ID \
   tar -czf /srv/gameserver/data/vs/Backups/backup-$(date +%s).tar.gz \
   /srv/gameserver/data/vs/Saves
 ```
@@ -149,9 +149,9 @@ docker exec vintage-story-kjbe9vn1omxtdnjzyiopjlrs \
 
 To reset and create a fresh world (keeps downloaded mods):
 ```bash
-docker stop vintage-story-kjbe9vn1omxtdnjzyiopjlrs
+docker stop vintage-story-$COOLIFY_APP_ID
 rm -rf data/Saves data/Playerdata data/ModData data/Cache
-docker start vintage-story-kjbe9vn1omxtdnjzyiopjlrs
+docker start vintage-story-$COOLIFY_APP_ID
 ```
 
 ### Client Mods

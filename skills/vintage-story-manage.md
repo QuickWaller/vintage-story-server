@@ -29,7 +29,7 @@ Manage the Vintage Story dedicated server. Perform operations like checking stat
 
 ## Notes
 
-- Server is located at 192.168.2.151
-- SSH access via ~/.ssh/sitehost1
+- Server is located at $SERVER_IP
+- SSH access via $SITEHOST_1_SSH_KEY_PATH
 - Changes to mods require server restart
 - Backups are timestamped and stored on the server
