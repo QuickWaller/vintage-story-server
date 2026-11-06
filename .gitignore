@@ -18,3 +18,7 @@ production
 .env
 
 client-mods/*.zip
+
+# Per-machine Claude settings and local-only notes (never commit)
+.claude/settings.local.json
+*.local.md
